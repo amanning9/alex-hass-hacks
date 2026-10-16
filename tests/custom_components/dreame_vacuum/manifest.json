@@ -1,0 +1,1 @@
+{"domain": "dreame_vacuum", "name": "Fake Dreame", "config_flow": true, "version": "v2.0.2", "iot_class": "cloud_polling", "codeowners": [], "documentation": "https://x", "requirements": []}
