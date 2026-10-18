@@ -35,22 +35,22 @@ Then: Settings → Devices & services → Add integration → **Alex's Hacks** �
       entity_id: vacuum.robbie
     data:
       rooms:
-        - room: sensor.robbie_kitchen
+        - room: sensor.robbie_dreame_rooms_kitchen
           suction: turbo      # none (don't vacuum) / quiet / standard / strong / turbo
           wetness: 20         # 0 = don't mop, 1-32
           passes: 2
-        - room: sensor.robbie_lounge_rug
+        - room: sensor.robbie_dreame_rooms_lounge_rug
           suction: none
   ```
 
 ## Mop drying
 
-The *Dreame mop drying* hack adds, on the vacuum's device:
+The *Dreame mop drying* hack adds, on its own device ("<vacuum>: Dreame mop drying"):
 
-- `switch.<vacuum>_allow_drying`: turn it on and off from your own automations. Off stops
+- `switch.<vacuum>_dreame_mop_drying_allow_drying`: turn it on and off from your own automations. Off stops
   drying; on resumes it, counting only the time still owed.
-- `number.<vacuum>_mop_drying_time`: total drying per wash (default 180 minutes).
-- `sensor.<vacuum>_mop_drying`: `dry`, `drying`, `paused` (wet, not allowed) or `waiting`
+- `number.<vacuum>_dreame_mop_drying_mop_drying_time`: total drying per wash (default 180 minutes).
+- `sensor.<vacuum>_dreame_mop_drying_mop_drying`: `dry`, `drying`, `paused` (wet, not allowed) or `waiting`
   (wet and allowed, but the robot is out or busy), or `robot_auto_drying` (see below), with `minutes_left` and `dried_minutes`.
 
 Turn the robot's own auto-drying **off** (its Auto drying switch, or in the Dreame app).

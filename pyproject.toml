@@ -3,12 +3,12 @@
 [project]
 name = "alex-hass-hacks"
 version = "0"
-requires-python = ">=3.13.2"
+requires-python = ">=3.14.2"
 
 [dependency-groups]
 dev = [
-    # Home Assistant test harness; 0.13.316 bundles Home Assistant 2026.2.3, which the tests were written against.
-    "pytest-homeassistant-custom-component==0.13.316",
+    # Home Assistant test harness; 0.13.373 bundles Home Assistant 2026.10.2, which the tests were written against.
+    "pytest-homeassistant-custom-component==0.13.373",
 ]
 
 [tool.uv]

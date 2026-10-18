@@ -39,7 +39,9 @@ def get_coordinator(hass: HomeAssistant, dreame_entry_id: str):
 
 
 def device_info(coordinator) -> DeviceInfo:
-    """Put the hack's entities on the vacuum's own device."""
+    """The hack's device. Since Home Assistant 2026.10 a device belongs to one config entry, so
+    this registers a device for the hack's entry (named after the entry, e.g. "Robbie: Dreame
+    rooms"), and entity IDs start with that name (sensor.robbie_dreame_rooms_kitchen)."""
     return DeviceInfo(identifiers={(DREAME_DOMAIN, coordinator.device.mac)})
 
 
