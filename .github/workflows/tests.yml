@@ -21,3 +21,12 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run pytest tests -p no:cacheprovider
+
+  python-matches-ha:
+    name: Python matches Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      # .python-version and requires-python must match what the locked Home Assistant needs.
+      - run: uv run --no-project tools/check_python.py

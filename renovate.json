@@ -2,12 +2,5 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
-  ],
-  "packageRules": [
-    {
-      "description": "The dev Python (.python-version) follows what the pinned Home Assistant test harness supports; bump it by hand together with pytest-homeassistant-custom-component.",
-      "matchManagers": ["pyenv"],
-      "enabled": false
-    }
   ]
 }
