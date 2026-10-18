@@ -22,7 +22,7 @@ Generated from the hack modules by `tools/gen_hacks_md.py`; edit the modules, no
 
 ## Dreame rooms (`dreame_rooms`)
 
-**What:** Adds a sensor per room on one of the robot's maps (the one it's on when the hack is added), named as in the Dreame app, whose state is the room number. Pickers can filter to these (integration: alex_hacks, domain: sensor), so they list only rooms, and a room the robot splits in two shows as two. If a room disappears from that map, its entity goes unavailable (not deleted, so automations keep their references) and a repair says which room. While the robot is on another map, nothing changes.
+**What:** Adds a sensor per room on one of the robot's maps (the one it's on when the hack is added), named as in the Dreame app, whose state is the room number. Pickers can filter to these (integration: alex_hacks, domain: sensor), so they list only rooms, and a room the robot splits in two shows as two. If a room disappears from that map, its entity goes unavailable (not deleted, so automations keep their references) and a repair says which room; submitting the repair removes the entity. While the robot is on another map, nothing changes.
 
 **Why:** Dreame Vacuum's per-room entities can't be told apart from its other entities in an entity picker (no device class to filter on), and Home Assistant's area mapping for vacuums can't be read from templates, so automations can't turn a picked area into room numbers, and an area covering two robot rooms can't be split.
 

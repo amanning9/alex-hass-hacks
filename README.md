@@ -121,6 +121,8 @@ and publishes a GitHub release, which HACS offers as an update.
 
 From the repository root, with [uv](https://docs.astral.sh/uv/): `uv run pytest tests` (uv
 installs the pinned test harness from `uv.lock` first). CI runs these,
-plus HACS validation and hassfest, on every push.
+plus HACS validation and hassfest, on every push. CI also checks `.python-version` and
+`requires-python` match what the locked Home Assistant needs (`uv run --no-project
+tools/check_python.py`); when Renovate bumps one, it says what else to change.
 `tests/custom_components/dreame_vacuum` is a fake Dreame integration for the tests; don't
 install it.

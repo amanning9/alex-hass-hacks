@@ -74,7 +74,14 @@
     },
     "room_missing": {
       "title": "Room missing from {vacuum}'s map: {room}",
-      "description": "Room {room_id} (\"{room}\") is no longer on {vacuum}'s map, so {entity_id} is unavailable and anything that picks it (e.g. the vacuum-then-mop blueprint) won't clean it.\n\nIf the room was merged, split or redrawn, pick the new room(s) wherever this one was used, then delete {entity_id}. This repair clears itself if the room comes back."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Remove {room}?",
+            "description": "Room {room_id} (\"{room}\") is no longer on {vacuum}'s map, so {entity_id} is unavailable and anything that picks it (e.g. the vacuum-then-mop action) won't clean it.\n\nIf the room was merged, split or redrawn, pick the new room(s) wherever this one was used. Submit to remove {entity_id}. If you'd rather wait, close this: the repair clears itself if the room comes back."
+          }
+        }
+      }
     },
     "drying_wont_stop": {
       "title": "Mop drying won't stop: {title}",

@@ -151,3 +151,40 @@ async def test_other_map(hass):
     assert entry.data["map_id"] == 10
     assert hass.states.get("sensor.robbie_dreame_rooms_kitchen").state == "1"
     assert hass.states.get("sensor.robbie_dreame_rooms_bedroom") is None
+
+
+async def test_missing_room_repair_removes_the_entity(hass):
+    from homeassistant.components.repairs import repairs_flow_manager
+    from homeassistant.helpers import entity_registry as er, issue_registry as ir
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "repairs", {})
+    dreame, coord = await setup_dreame(hass)
+    entry = await add_hack(hass, "dreame_rooms", dreame)
+    issue_id = f"room_missing_{entry.entry_id}_5"
+    rug_id = "sensor.robbie_dreame_rooms_lounge_rug"
+    dev = coord.device
+    rug = dev.status.current_segments.pop(5)
+    coord.async_set_updated_data(dev)
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue("alex_hacks", issue_id).is_fixable
+
+    flows = repairs_flow_manager(hass)
+    result = await flows.async_init("alex_hacks", data={"issue_id": issue_id})
+    assert result["step_id"] == "confirm"
+    assert result["description_placeholders"]["entity_id"] == rug_id
+    result = await flows.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+    assert result["type"] == "create_entry"
+    assert hass.states.get(rug_id) is None and er.async_get(hass).async_get(rug_id) is None
+    assert ir.async_get(hass).async_get_issue("alex_hacks", issue_id) is None
+
+    # Stays gone after a reload...
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get(rug_id) is None
+    # ...and comes back as a new entity if the room returns to the map.
+    dev.status.current_segments[5] = rug
+    coord.async_set_updated_data(dev)
+    await hass.async_block_till_done()
+    assert hass.states.get(rug_id).state == "5"
