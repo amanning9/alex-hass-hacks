@@ -113,8 +113,8 @@ pass-through if it uses a new platform, then run `uv run tools/gen_hacks_md.py`.
 
 ## Releasing
 
-Bump `version` in `custom_components/alex_hacks/manifest.json`, commit, then tag and push
-(`git tag v0.2.1 && git push --tags`). The release workflow checks the tag matches the manifest
+Bump `version` in `custom_components/alex_hacks/manifest.json` (e.g. `1.0.2`, no "v"), commit, then tag and push
+(`git tag v1.0.2 && git push --tags`). The release workflow checks the tag matches the manifest
 and publishes a GitHub release, which HACS offers as an update.
 
 ## Tests
