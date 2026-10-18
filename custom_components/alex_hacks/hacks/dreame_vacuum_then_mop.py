@@ -15,7 +15,7 @@ from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import ATTR_ENTITY_ID, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
@@ -120,6 +120,7 @@ async def _async_run(hass: HomeAssistant, call: ServiceCall) -> None:
         "customized_cleaning": f"switch.{name}_customized_cleaning",
         "task_status": f"sensor.{name}_task_status",
         "task_type": f"sensor.{name}_task_type",
+        "charging": f"binary_sensor.{name}_charging_state",
     }
     required = [vacuum, entities["customized_cleaning"], entities["task_status"], entities["task_type"]]
     if missing := [e for e in required if hass.states.get(e) is None]:
@@ -220,10 +221,14 @@ async def _async_phases(
             return (
                 _is(hass, entities["task_type"], STATE_UNAVAILABLE)
                 and _is(hass, entities["task_status"], "completed")
-                and _is(hass, vacuum, "docked")
+                # Some robots say idle, not docked, while charging on the base.
+                and (
+                    _is(hass, vacuum, "docked")
+                    or (_is(hass, vacuum, "idle") and _is(hass, entities["charging"], STATE_ON))
+                )
             )
 
-        watched = [vacuum, entities["task_status"], entities["task_type"]]
+        watched = [vacuum, entities["task_status"], entities["task_type"], entities["charging"]]
         try:
             await _wait_for(hass, watched, is_running, timedelta(0), START_TIMEOUT)
         except TimeoutError as err:

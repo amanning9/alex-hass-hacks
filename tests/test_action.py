@@ -208,3 +208,23 @@ async def test_action_only_while_hack_added(hass):
     assert await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
     assert not hass.services.has_service("alex_hacks", "dreame_vacuum_then_mop")
+
+
+async def test_idle_and_charging_counts_as_home(hass, fast):
+    """Some robots (e.g. mum and dad's) report idle, not docked, while charging on the base."""
+    coord, calls = await setup(hass)
+    st = hass.states.async_set
+    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+        {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "none"}]},
+        blocking=True))
+    await asyncio.sleep(0.2)
+    st("sensor.robbie_task_type", "standard"); st("vacuum.robbie", "cleaning"); st("sensor.robbie_task_status", "cleaning")
+    st("binary_sensor.robbie_charging_state", "off")
+    await asyncio.sleep(0.2)
+    # Finished but idle away from the base: still waiting.
+    st("sensor.robbie_task_status", "completed"); st("vacuum.robbie", "idle"); st("sensor.robbie_task_type", "unavailable")
+    await asyncio.sleep(1.5)
+    assert not task.done()
+    st("binary_sensor.robbie_charging_state", "on")  # back on the base, charging
+    await asyncio.sleep(1.5)
+    assert task.done() and task.exception() is None
