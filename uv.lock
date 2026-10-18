@@ -205,6 +205,18 @@ wheels = [
 ]
 
 [[package]]
+name = "aiomqtt"
+version = "2.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "paho-mqtt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/70/44/cfc58272783a11729462dc6df5adbfeabd084f840f609054ac772ae98c19/aiomqtt-2.5.1.tar.gz", hash = "sha256:25a0a47d157e8f158d2da1110ea4786c0615518751e94f7b04976c977a8ff20d", size = 86641, upload-time = "2026-03-05T18:28:56.421Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/9e/5089fa596220bf0dc73deeb23db27904e4b3504986caf08571f6f5cb84a8/aiomqtt-2.5.1-py3-none-any.whl", hash = "sha256:fd58c3593160e4d475d90ce911cdfc4239cd64de96b0ba22edf6c86bd7afa278", size = 16051, upload-time = "2026-03-05T18:28:55.14Z" },
+]
+
+[[package]]
 name = "aiooui"
 version = "0.1.11"
 source = { registry = "https://pypi.org/simple" }
@@ -244,13 +256,17 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
+    { name = "deebot-client" },
     { name = "pytest-homeassistant-custom-component" },
 ]
 
 [package.metadata]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest-homeassistant-custom-component", specifier = "==0.13.373" }]
+dev = [
+    { name = "deebot-client", specifier = "==18.7.0" },
+    { name = "pytest-homeassistant-custom-component", specifier = "==0.13.373" },
+]
 
 [[package]]
 name = "annotated-types"
@@ -609,6 +625,15 @@ wheels = [
 ]
 
 [[package]]
+name = "cachetools"
+version = "7.2.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/88/27fe0785c7a9aa285c753db0b4ea967adbf76128fede66379c35a4b8d054/cachetools-7.2.3.tar.gz", hash = "sha256:e6fafd06de4a5bd915ff7d247588ea497e28c9a568c62db8678d9a5f11515a9a", size = 43727, upload-time = "2026-10-17T11:41:25.471Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fb/dd/044062b61d94c59c29ad0da6918e6a21106f5b115096e9c87081cdd96167/cachetools-7.2.3-py3-none-any.whl", hash = "sha256:85ef9d2703918bedf7f88caa0b06bb3bb7a71360eb0b05c20796b89fede6e30c", size = 18352, upload-time = "2026-10-17T11:41:24.161Z" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.7.22"
 source = { registry = "https://pypi.org/simple" }
@@ -952,6 +977,37 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/15/8c/32e83f3635ae43a1863ef55b1be42ce58cee85fd13409bb8b197bca600b1/dbus_fast-5.2.0-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:cc171f8b0728626eba19ac5893cbf1a5a813120e6fd0440168ba013f941abeb8", size = 1644612, upload-time = "2026-10-02T13:41:27.943Z" },
     { url = "https://files.pythonhosted.org/packages/96/f4/13461600a4f019ff3b6eb285a6f992efcbe188b203defe7d0977634e231a/dbus_fast-5.2.0-cp315-cp315t-musllinux_1_2_riscv64.whl", hash = "sha256:5e8d93ca1b3d344c7ff5c4959e6d8ac2c6a0e794aef9d1606177647d537b7e99", size = 888703, upload-time = "2026-10-02T13:41:29.948Z" },
     { url = "https://files.pythonhosted.org/packages/bd/86/df2000ce91efb75104189fe41ffae517c6c8c1ba97f4160fa8322390f704/dbus_fast-5.2.0-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:e6f32672a446284b0d381349c91f6602356a4c017c1604fccbcc02347496be92", size = 1727655, upload-time = "2026-10-02T13:41:32.145Z" },
+]
+
+[[package]]
+name = "deebot-client"
+version = "18.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "aiomqtt" },
+    { name = "cachetools" },
+    { name = "defusedxml" },
+    { name = "orjson" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/ca/6a98ec8aaf37533485fd1109b3b0b47811d0b19a1b6dd7a3736677fedc9e/deebot_client-18.7.0.tar.gz", hash = "sha256:1f93da745c75a0733bed8bfc53d4436f17e604167413c9177d58565f23a317a3", size = 297302, upload-time = "2026-10-16T07:59:44.872Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/be/3c/b6cc806dbb57dafffe92a80b2e61121c1c0821a48737cc3e0f0854aab6f0/deebot_client-18.7.0-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:b318a0c99f07a9ff064a58ec09a7ac992c81befa8d38c1f6059b5120bfc500c7", size = 1368897, upload-time = "2026-10-16T07:59:33.102Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/ce/444e6dd72331bd38a145daf1d0778da206b8c10ef3b5a50123e48bedd5e6/deebot_client-18.7.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:b6f071104256e71b31d99019df59e3cce4cc29998c656453981307aac3ab7f2b", size = 1306911, upload-time = "2026-10-16T07:59:34.691Z" },
+    { url = "https://files.pythonhosted.org/packages/31/cf/254c614b73b044e82f7ae9cdf1d43376e4c43e1c93d396d65129096d8242/deebot_client-18.7.0-cp314-cp314-manylinux_2_34_aarch64.whl", hash = "sha256:e2523b2173f79dce12440bea71361f87d9813eadafa1e4e0ec017beac14c2a01", size = 1320561, upload-time = "2026-10-16T07:59:36.09Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/da/877ac22826d69fec1f16aa01dfed560881750baa485a0995156977d2d393/deebot_client-18.7.0-cp314-cp314-manylinux_2_34_x86_64.whl", hash = "sha256:792900a67ab0e72df1da41a97f872172c8d4c598d1bdd3e6d8c146c7eca811fb", size = 1371284, upload-time = "2026-10-16T07:59:37.987Z" },
+    { url = "https://files.pythonhosted.org/packages/04/d8/0909f1a1cd44e7d99ee155b5b07b0e295e8cb6bba7391d8035d7c05de8c8/deebot_client-18.7.0-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:9b8f39ee402621d654eaadde1cf9cb8502ca616496410001aa2ca95f618bd260", size = 1482016, upload-time = "2026-10-16T07:59:39.495Z" },
+    { url = "https://files.pythonhosted.org/packages/db/e2/ec9254ec7a6c3d229f76fe78fd03338e6b088526660a05eaa5a8c11a0da9/deebot_client-18.7.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:6989dcb29f1f40d12101fe5a534adb944676aae3b483d7cf05a70e1294b638db", size = 1569428, upload-time = "2026-10-16T07:59:40.95Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/fa/bfabb9526f3a26d208d4ad8deb8769ec89b1e6b38db67a73e3472d48a8de/deebot_client-18.7.0-cp314-cp314-win_amd64.whl", hash = "sha256:5b2b0227ea135eb06ebb4a56a031f8612271aa230916d35a99e81ccb0fd2f660", size = 1242423, upload-time = "2026-10-16T07:59:42.899Z" },
+]
+
+[[package]]
+name = "defusedxml"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69", size = 75520, upload-time = "2021-03-08T10:59:26.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61", size = 25604, upload-time = "2021-03-08T10:59:24.45Z" },
 ]
 
 [[package]]

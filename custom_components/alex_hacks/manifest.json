@@ -3,6 +3,7 @@
   "name": "Alex's Hacks",
   "after_dependencies": [
     "dreame_vacuum",
+    "ecovacs",
     "logbook",
     "mobile_app",
     "person"
@@ -16,5 +17,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/amanning9/alex-hass-hacks/issues",
   "requirements": [],
-  "version": "1.0.4"
+  "version": "1.1.0"
 }

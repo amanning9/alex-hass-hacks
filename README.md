@@ -105,6 +105,40 @@ the action, which takes the same `data` as `notify.mobile_app_<phone>`:
 Each entity's `phones` attribute lists the phones it will send to. One phone failing doesn't
 stop the others; it's an error only if nobody could be notified.
 
+## Ecovacs animal protection
+
+The *Ecovacs animal protection* hack adds, for an Ecovacs GOAT mower (on its own device,
+"<mower>: Ecovacs animal protection"):
+
+- `switch.<mower>_ecovacs_animal_protection_animal_protection`: animal protection on or off.
+- `time.<mower>_ecovacs_animal_protection_animal_protection_start` and `…_end`: the nightly
+  window when the mower stays docked.
+
+It reads the setting once at start-up (and again when the mower comes back online); changes
+made in the Ecovacs app arrive through the Ecovacs integration's existing connection, so
+nothing is polled. To follow sunset and sunrise through the year:
+
+```yaml
+- alias: Mower animal protection follows the sun
+  triggers:
+    - trigger: time
+      at: "12:00:00"
+    - trigger: homeassistant
+      event: start
+  actions:
+    # At midday, next_setting is this evening and next_rising is tomorrow morning.
+    - action: time.set_value
+      target:
+        entity_id: time.goaty_ecovacs_animal_protection_animal_protection_start
+      data:
+        time: "{{ (as_datetime(state_attr('sun.sun', 'next_setting')) | as_local).strftime('%H:%M') }}"
+    - action: time.set_value
+      target:
+        entity_id: time.goaty_ecovacs_animal_protection_animal_protection_end
+      data:
+        time: "{{ (as_datetime(state_attr('sun.sun', 'next_rising')) | as_local).strftime('%H:%M') }}"
+```
+
 ## Adding a hack
 
 Add `hacks/<key>.py` with `KEY`, `TITLE`, `WHAT`, `WHY`, `REMOVE_WHEN`, `PLATFORMS` and the
