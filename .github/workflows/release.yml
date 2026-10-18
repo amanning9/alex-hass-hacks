@@ -18,7 +18,8 @@ jobs:
       - name: Check the tag matches manifest.json
         run: |
           version=$(uv run --no-project python -c "import json;print(json.load(open('custom_components/alex_hacks/manifest.json'))['version'])")
-          test "v$version" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME doesn't match manifest version $version"; exit 1; }
+          # Either may have a leading "v" (tag v1.2.3, manifest 1.2.3 is the convention).
+          test "${version#v}" = "${GITHUB_REF_NAME#v}" || { echo "Tag $GITHUB_REF_NAME doesn't match manifest version $version"; exit 1; }
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
