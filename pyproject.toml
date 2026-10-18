@@ -1,0 +1,19 @@
+# Development tooling only (tests, HACKS.md generator); not a Python package. The integration's
+# version lives in custom_components/alex_hacks/manifest.json.
+[project]
+name = "alex-hass-hacks"
+version = "0"
+requires-python = ">=3.13.2,<3.14"
+
+[dependency-groups]
+dev = [
+    # Home Assistant test harness; 0.13.316 bundles Home Assistant 2026.2.3, which the tests were written against.
+    "pytest-homeassistant-custom-component==0.13.316",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

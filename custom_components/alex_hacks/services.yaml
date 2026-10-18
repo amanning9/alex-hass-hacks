@@ -1,0 +1,75 @@
+dreame_vacuum_then_mop:
+  target:
+    entity:
+      domain: vacuum
+      integration: dreame_vacuum
+  fields:
+    rooms:
+      required: true
+      selector:
+        object:
+          multiple: true
+          label_field: room
+          fields:
+            room:
+              label: Room
+              required: true
+              selector:
+                entity:
+                  filter:
+                    integration: alex_hacks
+                    domain: sensor
+            suction:
+              label: Vacuum
+              selector:
+                select:
+                  options:
+                    - label: Don't vacuum
+                      value: none
+                    - label: Quiet
+                      value: quiet
+                    - label: Standard
+                      value: standard
+                    - label: Strong
+                      value: strong
+                    - label: Turbo
+                      value: turbo
+            wetness:
+              label: Mop wetness (0 = don't mop)
+              selector:
+                number:
+                  min: 0
+                  max: 32
+                  mode: slider
+            passes:
+              label: Passes
+              selector:
+                number:
+                  min: 1
+                  max: 3
+                  mode: box
+    max_duration:
+      default:
+        hours: 3
+      selector:
+        duration: {}
+
+notify_person:
+  fields:
+    person:
+      required: true
+      selector:
+        entity:
+          domain: person
+          multiple: true
+    title:
+      selector:
+        text:
+    message:
+      required: true
+      selector:
+        text:
+          multiline: true
+    data:
+      selector:
+        object:

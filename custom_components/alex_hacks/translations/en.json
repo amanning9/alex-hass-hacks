@@ -1,0 +1,137 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add hacks",
+        "data": {
+          "hack": "Hacks"
+        }
+      },
+      "configure": {
+        "title": "Set up",
+        "description": "{hacks}",
+        "data": {
+          "dreame_entry_id": "Vacuum"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Those hacks are already set up for this.",
+      "no_dreame": "Set up the Dreame Vacuum integration first."
+    },
+    "error": {
+      "none_selected": "Tick at least one hack."
+    }
+  },
+  "entity": {
+    "select": {
+      "cleaning_mode_fixed": {
+        "name": "Cleaning mode (fixed)",
+        "state": {
+          "sweeping": "Sweeping",
+          "mopping": "Mopping",
+          "sweeping_and_mopping": "Sweeping and mopping",
+          "mopping_after_sweeping": "Mopping after sweeping"
+        }
+      }
+    },
+    "switch": {
+      "allow_mop_drying": {
+        "name": "Allow drying"
+      }
+    },
+    "number": {
+      "mop_drying_time": {
+        "name": "Mop drying time"
+      }
+    },
+    "sensor": {
+      "mop_drying": {
+        "name": "Mop drying",
+        "state": {
+          "dry": "Dry",
+          "drying": "Drying",
+          "paused": "Paused",
+          "waiting": "Waiting for the robot",
+          "robot_auto_drying": "Robot's auto-drying in charge",
+          "needs_water": "Needs washing: refill the base"
+        },
+        "state_attributes": {
+          "minutes_left": {
+            "name": "Minutes left"
+          },
+          "dried_minutes": {
+            "name": "Dried so far"
+          }
+        }
+      }
+    }
+  },
+  "issues": {
+    "probably_fixed": {
+      "title": "Hack probably not needed: Dreame cleaning mode",
+      "description": "Dreame Vacuum {version} has run for a week without dropping \"mopping after sweeping\" from its cleaning-mode options (last seen on {bug_version}).\n\nSwitch automations from \"Cleaning mode (fixed)\" back to Dreame's own cleaning-mode select, then delete the \"{title}\" entry under Alex's Hacks."
+    },
+    "room_missing": {
+      "title": "Room missing from {vacuum}'s map: {room}",
+      "description": "Room {room_id} (\"{room}\") is no longer on {vacuum}'s map, so {entity_id} is unavailable and anything that picks it (e.g. the vacuum-then-mop blueprint) won't clean it.\n\nIf the room was merged, split or redrawn, pick the new room(s) wherever this one was used, then delete {entity_id}. This repair clears itself if the room comes back."
+    },
+    "drying_wont_stop": {
+      "title": "Mop drying won't stop: {title}",
+      "description": "Drying should have stopped (Allow drying is off, or the mop has had its full drying time), but the robot still reports drying after several tries. Alex's Hacks keeps trying every couple of minutes.\n\nCheck the robot in the Dreame app (stop drying there if need be). This repair clears itself once drying stops."
+    },
+    "auto_drying_on": {
+      "title": "Turn off the robot's auto-drying: {title}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Turn off the robot's auto-drying",
+            "description": "The robot's own auto-drying is on, so it dries the mop by itself after every wash and Alex's Hacks has stopped controlling drying (Allow drying does nothing until it's off).\n\nSubmit to turn auto-drying off on the robot; Alex's Hacks then takes over drying straight away. (Or turn it off yourself with the robot's Auto drying switch or in the Dreame app.)"
+          }
+        },
+        "abort": {
+          "not_connected": "The robot isn't connected right now. Try again later, or turn auto-drying off in the Dreame app.",
+          "failed": "The robot didn't accept that (see the log). Turn auto-drying off with the robot's Auto drying switch or in the Dreame app."
+        }
+      }
+    }
+  },
+  "services": {
+    "dreame_vacuum_then_mop": {
+      "name": "Vacuum then mop",
+      "description": "Vacuums the rooms, waits until the robot has completely finished (not just a recharge, mop wash or auto-empty), then mops them. Turns CleanGenius off and customized cleaning on while it runs, then puts both back. Waits until the whole clean is done.",
+      "fields": {
+        "rooms": {
+          "name": "Rooms",
+          "description": "In cleaning order, each with its own settings. Blank settings: standard suction, wetness 16, one pass. \"Don't vacuum\" or wetness 0 skips a phase for that room."
+        },
+        "max_duration": {
+          "name": "Longest phase",
+          "description": "Give up (with an error) if a phase takes longer than this."
+        }
+      }
+    },
+    "notify_person": {
+      "name": "Notify person",
+      "description": "Sends a notification to every phone the person is signed in to with the companion app, with optional notification data (buttons, links, images, channels…), the same as for a phone's own notify action.",
+      "fields": {
+        "person": {
+          "name": "People",
+          "description": "Who to notify."
+        },
+        "title": {
+          "name": "Title",
+          "description": "Notification title."
+        },
+        "message": {
+          "name": "Message",
+          "description": "Notification text."
+        },
+        "data": {
+          "name": "Data",
+          "description": "Companion app notification data, e.g. actions (buttons), clickAction, image, channel."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "domain": "alex_hacks",
+  "name": "Alex's Hacks",
+  "after_dependencies": [
+    "dreame_vacuum",
+    "logbook",
+    "mobile_app",
+    "person"
+  ],
+  "codeowners": [
+    "@amanning9"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/amanning9/alex-hass-hacks",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/amanning9/alex-hass-hacks/issues",
+  "requirements": [],
+  "version": "0.4.0"
+}
