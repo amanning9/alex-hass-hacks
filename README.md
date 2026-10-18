@@ -144,9 +144,15 @@ nothing is polled. To follow sunset and sunrise through the year:
 The *Ecovacs area settings* hack adds, for each mowing area of an Ecovacs GOAT mower (on its
 own device, "<mower>: Ecovacs area settings"), named as in the Ecovacs app:
 
-- `number.<mower>_ecovacs_area_settings_<area>_direction`: the mowing direction, in degrees.
-- `…_<area>_cutting_height`, `…_<area>_speed` and `…_<area>_obstacle_grass_height` (the grass
-  height it treats as an obstacle): the app's levels, as the mower reports them.
+- `number.<mower>_ecovacs_area_settings_<area>_direction`: the mowing direction, in degrees,
+  as the app shows it.
+- `number.…_<area>_mowing_height`: 3 to 8 cm, in half centimetres.
+- `select.…_<area>_mowing_speed`: Delicate (0.35 m/s) or Quick (0.5 m/s).
+- `select.…_<area>_obstacle_avoidance_mode`: Short grass environment (avoids things 10 cm
+  or taller), Normal environment (15 cm) or High grass environment (20 cm).
+
+Each has a `device_value` attribute with the mower's own value. A select shows unknown if the
+mower reports a value it doesn't know.
 
 The mower takes all of an area's settings at once, so changing one sends the others unchanged.
 Settings are read at start-up (and when the mower comes back online); after that the mower's

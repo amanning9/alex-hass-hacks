@@ -6,8 +6,9 @@ from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 PREFIX = "number.goaty_ecovacs_area_settings"
+SELECT = "select.goaty_ecovacs_area_settings"
 SENTRUM = f"{PREFIX}_sentrum_direction"
-VEST_SPEED = f"{PREFIX}_vestkanten_speed"
+VEST_SPEED = f"{SELECT}_vestkanten_mowing_speed"
 
 
 async def settle(hass):
@@ -38,19 +39,30 @@ async def test_reads_named_areas_and_sets(hass):
     entry, mower = await setup(hass)
     assert entry.title == "Goaty: Ecovacs area settings"
     state = hass.states.get(SENTRUM)
-    assert state.state == "180" and state.attributes["friendly_name"] == "Goaty: Ecovacs area settings Sentrum direction"
-    assert hass.states.get(f"{PREFIX}_sentrum_cutting_height").state == "10"
-    assert hass.states.get(f"{PREFIX}_sentrum_obstacle_grass_height").state == "1"
-    assert hass.states.get(VEST_SPEED).state == "4"
-    await hass.services.async_call("number", "set_value", {"entity_id": SENTRUM, "value": 135}, blocking=True)
+    # As the app shows them: the device's 180 is the app's 90.
+    assert state.state == "90" and state.attributes["friendly_name"] == "Goaty: Ecovacs area settings Sentrum direction"
+    assert state.attributes["device_value"] == 180
+    assert hass.states.get(f"{PREFIX}_sentrum_mowing_height").state == "3.5"
+    assert hass.states.get(f"{SELECT}_sentrum_obstacle_avoidance_mode").state == "short_grass"
+    assert hass.states.get(f"{SELECT}_sentrum_mowing_speed").state == "delicate"
+    assert hass.states.get(VEST_SPEED).state == "quick"
+    await hass.services.async_call("number", "set_value", {"entity_id": SENTRUM, "value": 130}, blocking=True)
     # Every field is sent, the others unchanged.
     assert mower.calls[-1] == (
-        "setAreaParameter", {"areaID": "1", "mowHeightLevel": 10, "cutMode": 7, "obstacleHeight": 1, "angle": 135})
-    assert hass.states.get(SENTRUM).state == "135"
-    await hass.services.async_call("number", "set_value", {"entity_id": VEST_SPEED, "value": 5}, blocking=True)
+        "setAreaParameter", {"areaID": "1", "mowHeightLevel": 10, "cutMode": 7, "obstacleHeight": 1, "angle": 140})
+    assert hass.states.get(SENTRUM).state == "130"
+    await hass.services.async_call("number", "set_value", {"entity_id": SENTRUM, "value": 53}, blocking=True)
+    assert mower.calls[-1][1]["angle"] == 217  # as seen on the real mower
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": f"{PREFIX}_sentrum_mowing_height", "value": 8}, blocking=True)
+    assert mower.calls[-1][1]["mowHeightLevel"] == 1
+    await hass.services.async_call(
+        "select", "select_option", {"entity_id": f"{SELECT}_vestkanten_obstacle_avoidance_mode", "option": "high_grass"}, blocking=True)
+    assert mower.calls[-1][1]["obstacleHeight"] == 3
+    await hass.services.async_call("select", "select_option", {"entity_id": VEST_SPEED, "option": "delicate"}, blocking=True)
     assert mower.calls[-1] == (
-        "setAreaParameter", {"areaID": "2", "mowHeightLevel": 9, "cutMode": 5, "obstacleHeight": 2, "angle": 0})
-    assert hass.states.get(SENTRUM).state == "135"
+        "setAreaParameter", {"areaID": "2", "mowHeightLevel": 9, "cutMode": 7, "obstacleHeight": 3, "angle": 0})
+    assert hass.states.get(SENTRUM).state == "53"
     # One read of each, at start-up: no polling.
     assert [c[0] for c in mower.calls if c[0].startswith("get")] == ["getAreaSet", "getAreaParameter"]
 
@@ -61,14 +73,22 @@ async def test_rejected_change_errors_and_keeps_the_old_value(hass):
     mower.accept = False
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call("number", "set_value", {"entity_id": SENTRUM, "value": 90}, blocking=True)
-    assert hass.states.get(SENTRUM).state == "180"
+    assert hass.states.get(SENTRUM).state == "90"
+
+
+async def test_unknown_value_shows_unknown(hass):
+    def odd_speed(mower):
+        mower.areas["1"]["cutMode"] = 5
+    await setup(hass, odd_speed)
+    state = hass.states.get(f"{SELECT}_sentrum_mowing_speed")
+    assert state.state == "unknown" and state.attributes["device_value"] == 5
 
 
 async def test_unnamed_areas_fall_back(hass):
     def no_names(mower):
         mower.area_set = None
     await setup(hass, no_names)
-    assert hass.states.get(f"{PREFIX}_area_1_direction").state == "180"
+    assert hass.states.get(f"{PREFIX}_area_1_direction").state == "90"
 
 
 async def test_mower_pushes_and_app_changes_arrive_without_polling(hass):
@@ -83,20 +103,21 @@ async def test_mower_pushes_and_app_changes_arrive_without_polling(hass):
         {"areaID": "4", "mowHeightLevel": 9, "cutMode": 7, "obstacleHeight": 3, "angle": 90},
     ]}}})
     await settle(hass)
-    assert hass.states.get(SENTRUM).state == "45"
-    assert hass.states.get(f"{PREFIX}_sentrum_cutting_height").state == "8"
-    assert hass.states.get(f"{PREFIX}_ostkanten_direction").state == "90"
+    assert hass.states.get(SENTRUM).state == "225"
+    assert hass.states.get(f"{PREFIX}_sentrum_mowing_height").state == "4.5"
+    assert hass.states.get(f"{PREFIX}_ostkanten_direction").state == "180"
+    assert hass.states.get(f"{SELECT}_ostkanten_obstacle_avoidance_mode").state == "high_grass"
     assert hass.states.get(VEST_SPEED).state == "unavailable"  # area 2 has gone
     # The app sets one area over MQTT, as deebot_client's MQTT client hands it over.
     command_type = COMMANDS_WITH_MQTT_P2P_HANDLING[DataType.JSON]["setAreaParameter"]
     request = {"header": {}, "body": {"data": {
-        "areaID": "4", "mowHeightLevel": 9, "cutMode": 6, "obstacleHeight": 3, "angle": 10}}}
+        "areaID": "4", "mowHeightLevel": 9, "cutMode": 4, "obstacleHeight": 3, "angle": 10}}}
     command = command_type.create_from_mqtt(orjson.dumps(request))
     command.handle_mqtt_p2p(mower.events, orjson.dumps({"header": {}, "body": {"code": 0, "msg": "ok"}}))
     await settle(hass)
-    assert hass.states.get(f"{PREFIX}_ostkanten_direction").state == "10"
-    assert hass.states.get(f"{PREFIX}_ostkanten_speed").state == "6"
-    assert hass.states.get(SENTRUM).state == "45"  # other areas untouched
+    assert hass.states.get(f"{PREFIX}_ostkanten_direction").state == "260"
+    assert hass.states.get(f"{SELECT}_ostkanten_mowing_speed").state == "quick"
+    assert hass.states.get(SENTRUM).state == "225"  # other areas untouched
     # Unloading takes the registrations away again.
     assert await hass.config_entries.async_unload(entry.entry_id)
     assert "setAreaParameter" not in COMMANDS_WITH_MQTT_P2P_HANDLING[DataType.JSON]
@@ -111,9 +132,21 @@ async def test_rereads_when_back_online_and_repairs_when_upstream_has_it(hass):
     mower.areas["1"]["angle"] = 270  # changed while offline
     mower.events.notify(AvailabilityEvent(available=True))
     await settle(hass)
-    assert hass.states.get(SENTRUM).state == "270"
+    assert hass.states.get(SENTRUM).state == "0"
 
     mower.capabilities.settings.area_parameter = object()
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
     assert ir.async_get(hass).async_get_issue("alex_hacks", f"area_settings_upstream_{entry.entry_id}")
+
+
+async def test_removes_the_old_raw_number_entities(hass):
+    from homeassistant.helpers import entity_registry as er
+    entry, mower = await setup(hass)
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create(
+        "number", "alex_hacks", f"{entry.data['ecovacs_device_id']}_area_1_area_speed", config_entry=entry)
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert registry.async_get(old.entity_id) is None
+    assert hass.states.get(f"{SELECT}_sentrum_mowing_speed").state == "delicate"

@@ -1,20 +1,23 @@
-"""Hack: Ecovacs GOAT per-area mowing settings (direction, height, speed, obstacle grass height)."""
+"""Hack: Ecovacs GOAT per-area mowing settings (direction, height, speed, obstacle avoidance)."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 import logging
 
 from homeassistant.components.number import NumberEntity, NumberMode
+from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import (
     SIGNAL_CONFIG_ENTRY_CHANGED,
     ConfigEntry,
     ConfigEntryChange,
     ConfigEntryState,
 )
-from homeassistant.const import DEGREE, EntityCategory, Platform
+from homeassistant.const import DEGREE, EntityCategory, Platform, UnitOfLength
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
-from homeassistant.helpers import device_registry as dr, issue_registry as ir
+from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
@@ -30,8 +33,8 @@ _LOGGER = logging.getLogger(__name__)
 KEY = "ecovacs_area_settings"
 TITLE = "Ecovacs area settings"
 WHAT = (
-    "Adds, for each mowing area of an Ecovacs GOAT mower, its mowing direction, cutting height, "
-    "speed and the grass height it treats as an obstacle, so they can be set from automations "
+    "Adds, for each mowing area of an Ecovacs GOAT mower, its mowing direction, mowing height, "
+    "mowing speed and obstacle avoidance mode, so they can be set from automations "
     "(e.g. turning the stripes every week). Areas are named as in the Ecovacs app. Changes made "
     "in the app show up straight away; nothing is polled."
 )
@@ -43,16 +46,59 @@ REMOVE_WHEN = (
     "deebot-client supports area settings for the mower (DeebotUniverse/client.py PR #1767) "
     "and the Ecovacs integration exposes them (a repair says when the library has it)."
 )
-PLATFORMS = [Platform.NUMBER]
+PLATFORMS = [Platform.NUMBER, Platform.SELECT]
 
-# Device field: (translation key, icon, min, max, unit, entity category). The ranges other than
-# the angle aren't known, so they're wide; the mower refuses what it can't take.
-SETTINGS: dict[str, tuple[str, str, int, int, str | None, EntityCategory | None]] = {
-    "angle": ("area_direction", "mdi:compass-outline", 0, 359, DEGREE, None),
-    "mowHeightLevel": ("area_cutting_height", "mdi:content-cut", 0, 99, None, EntityCategory.CONFIG),
-    "cutMode": ("area_speed", "mdi:speedometer", 0, 99, None, EntityCategory.CONFIG),
-    "obstacleHeight": ("area_obstacle_height", "mdi:grass", 0, 99, None, EntityCategory.CONFIG),
-}
+
+@dataclass(frozen=True)
+class NumberSetting:
+    """A device field shown as a number, converted to and from what the app shows."""
+
+    field: str
+    key: str
+    icon: str
+    low: float
+    high: float
+    step: float
+    unit: str | None
+    category: EntityCategory | None
+    mode: NumberMode
+    show: Callable[[int], float]
+    store: Callable[[float], int]
+
+
+@dataclass(frozen=True)
+class SelectSetting:
+    """A device field shown as a choice: device value -> option."""
+
+    field: str
+    key: str
+    icon: str
+    options: dict[int, str]
+
+
+NUMBERS = (
+    # The device's angle is the app's, mirrored and turned a quarter (app = 270 - device).
+    NumberSetting(
+        "angle", "area_direction", "mdi:compass-outline", 0, 359, 1, DEGREE, None, NumberMode.BOX,
+        show=lambda raw: (270 - raw) % 360, store=lambda value: (270 - round(value)) % 360,
+    ),
+    # Levels 1 (8 cm) to 11 (3 cm), half a centimetre apart.
+    NumberSetting(
+        "mowHeightLevel", "area_mowing_height", "mdi:content-cut", 3, 8, 0.5,
+        UnitOfLength.CENTIMETERS, EntityCategory.CONFIG, NumberMode.SLIDER,
+        show=lambda raw: 8.5 - raw / 2, store=lambda value: round((8.5 - value) * 2),
+    ),
+)
+SELECTS = (
+    SelectSetting("cutMode", "area_speed", "mdi:speedometer", {4: "quick", 7: "delicate"}),
+    # The grass it mows among: taller grass means only taller things count as obstacles.
+    SelectSetting(
+        "obstacleHeight", "area_obstacle_avoidance", "mdi:grass", {1: "short_grass", 2: "normal", 3: "high_grass"}
+    ),
+)
+SETTINGS = {"number": NUMBERS, "select": SELECTS}
+# Entities from 1.2.0, when every setting was a raw number.
+OLD_NUMBERS = ("_area_speed", "_area_obstacle_height", "_area_cutting_height")
 
 
 def async_entry_title(hass, data) -> str:
@@ -88,6 +134,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
             users["undo"] = None
 
     entry.async_on_unload(_release)
+    registry = er.async_get(hass)
+    for old in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if old.domain == "number" and old.unique_id.endswith(OLD_NUMBERS):
+            registry.async_remove(old.entity_id)
     controller = Controller(hass, entry, mower, lib)
     entry.async_on_unload(controller.async_start())
     await controller.async_read()
@@ -121,7 +171,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 async def async_setup_platform(hass, entry, platform, async_add_entities) -> None:
-    entry.runtime_data.async_add_entities = async_add_entities
+    entry.runtime_data.adders[platform] = async_add_entities
     entry.runtime_data.add_new_areas()
 
 
@@ -144,8 +194,8 @@ class Controller:
         self.areas: dict[str, dict[str, int]] = {}
         self.names: dict[str, str] = {}
         self.listeners: list = []
-        self.async_add_entities = None
-        self._added: set[str] = set()
+        self.adders: dict[str, Callable] = {}
+        self._added: set[tuple[str, str]] = set()
         ecovacs_device = dr.async_get(hass).async_get(entry.data[CONF_DEVICE_ID])
         self.device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
@@ -214,14 +264,12 @@ class Controller:
 
     @callback
     def add_new_areas(self) -> None:
-        if self.async_add_entities is None:
-            return
-        new = [area for area in self.areas if area not in self._added]
-        self._added.update(new)
-        if new:
-            self.async_add_entities(
-                [AreaSettingNumber(self, area, field) for area in sorted(new, key=_sort_key) for field in SETTINGS]
-            )
+        for platform, add in self.adders.items():
+            new = [area for area in sorted(self.areas, key=_sort_key) if (platform, area) not in self._added]
+            self._added.update((platform, area) for area in new)
+            entity = AreaSettingNumber if platform == "number" else AreaSettingSelect
+            if new:
+                add([entity(self, area, setting) for area in new for setting in SETTINGS[platform]])
 
     def area_name(self, area: str) -> str:
         return self.names.get(area) or f"Area {area}"
@@ -254,26 +302,18 @@ def _sort_key(area: str):
     return (0, int(area)) if area.isdigit() else (1, area)
 
 
-class AreaSettingNumber(NumberEntity):
+class _AreaSetting:
     _attr_has_entity_name = True
     _attr_should_poll = False
-    _attr_mode = NumberMode.BOX
-    _attr_native_step = 1
 
-    def __init__(self, controller: Controller, area: str, field: str) -> None:
+    def __init__(self, controller: Controller, area: str, setting) -> None:
         self.controller = controller
         self._area = area
-        self._field = field
-        key, icon, low, high, unit, category = SETTINGS[field]
-        self._attr_translation_key = key
-        self._attr_icon = icon
-        self._attr_native_min_value = low
-        self._attr_native_max_value = high
-        self._attr_native_unit_of_measurement = unit
-        self._attr_entity_category = category
-        self._attr_unique_id = f"{controller.entry.data[CONF_DEVICE_ID]}_area_{area}_{key}"
+        self._setting = setting
+        self._attr_translation_key = setting.key
+        self._attr_icon = setting.icon
+        self._attr_unique_id = f"{controller.entry.data[CONF_DEVICE_ID]}_area_{area}_{setting.key}"
         self._attr_device_info = controller.device_info
-        self._attr_extra_state_attributes = {"area_id": area}
         self._attr_translation_placeholders = {"area": controller.area_name(area)}
 
     @property
@@ -281,14 +321,52 @@ class AreaSettingNumber(NumberEntity):
         return self._area in self.controller.areas
 
     @property
-    def native_value(self) -> int | None:
+    def _raw(self) -> int | None:
         values = self.controller.areas.get(self._area)
-        return values[self._field] if values else None
+        return values[self._setting.field] if values else None
 
-    async def async_set_native_value(self, value: float) -> None:
-        await self.controller.async_set(self._area, self._field, round(value))
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {"area_id": self._area, "device_value": self._raw}
 
     async def async_added_to_hass(self) -> None:
         listeners = self.controller.listeners
         listeners.append(self.async_write_ha_state)
         self.async_on_remove(lambda: listeners.remove(self.async_write_ha_state))
+
+
+class AreaSettingNumber(_AreaSetting, NumberEntity):
+
+    def __init__(self, controller: Controller, area: str, setting: NumberSetting) -> None:
+        super().__init__(controller, area, setting)
+        self._attr_native_min_value = setting.low
+        self._attr_native_max_value = setting.high
+        self._attr_native_step = setting.step
+        self._attr_native_unit_of_measurement = setting.unit
+        self._attr_entity_category = setting.category
+        self._attr_mode = setting.mode
+
+    @property
+    def native_value(self) -> float | None:
+        raw = self._raw
+        return None if raw is None else self._setting.show(raw)
+
+    async def async_set_native_value(self, value: float) -> None:
+        await self.controller.async_set(self._area, self._setting.field, self._setting.store(value))
+
+
+class AreaSettingSelect(_AreaSetting, SelectEntity):
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, controller: Controller, area: str, setting: SelectSetting) -> None:
+        super().__init__(controller, area, setting)
+        self._attr_options = list(setting.options.values())
+
+    @property
+    def current_option(self) -> str | None:
+        # A value the app has but we don't know yet shows as unknown (see device_value).
+        return self._setting.options.get(self._raw)
+
+    async def async_select_option(self, option: str) -> None:
+        raw = next(raw for raw, name in self._setting.options.items() if name == option)
+        await self.controller.async_set(self._area, self._setting.field, raw)

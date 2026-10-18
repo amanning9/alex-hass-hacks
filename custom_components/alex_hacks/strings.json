@@ -35,6 +35,21 @@
           "sweeping_and_mopping": "Sweeping and mopping",
           "mopping_after_sweeping": "Mopping after sweeping"
         }
+      },
+      "area_speed": {
+        "name": "{area} mowing speed",
+        "state": {
+          "quick": "Quick",
+          "delicate": "Delicate"
+        }
+      },
+      "area_obstacle_avoidance": {
+        "name": "{area} obstacle avoidance mode",
+        "state": {
+          "short_grass": "Short grass environment",
+          "normal": "Normal environment",
+          "high_grass": "High grass environment"
+        }
       }
     },
     "switch": {
@@ -52,14 +67,8 @@
       "area_direction": {
         "name": "{area} direction"
       },
-      "area_cutting_height": {
-        "name": "{area} cutting height"
-      },
-      "area_speed": {
-        "name": "{area} speed"
-      },
-      "area_obstacle_height": {
-        "name": "{area} obstacle grass height"
+      "area_mowing_height": {
+        "name": "{area} mowing height"
       }
     },
     "sensor": {

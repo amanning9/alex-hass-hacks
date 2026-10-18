@@ -46,7 +46,7 @@ Generated from the hack modules by `tools/gen_hacks_md.py`; edit the modules, no
 
 ## Ecovacs area settings (`ecovacs_area_settings`)
 
-**What:** Adds, for each mowing area of an Ecovacs GOAT mower, its mowing direction, cutting height, speed and the grass height it treats as an obstacle, so they can be set from automations (e.g. turning the stripes every week). Areas are named as in the Ecovacs app. Changes made in the app show up straight away; nothing is polled.
+**What:** Adds, for each mowing area of an Ecovacs GOAT mower, its mowing direction, mowing height, mowing speed and obstacle avoidance mode, so they can be set from automations (e.g. turning the stripes every week). Areas are named as in the Ecovacs app. Changes made in the app show up straight away; nothing is polled.
 
 **Why:** Home Assistant's Ecovacs integration (deebot-client 18.7.0) doesn't support the GOAT's per-area settings, so they can only be changed in the Ecovacs app.
 
