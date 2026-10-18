@@ -157,3 +157,12 @@ async def test_no_repair_if_bug_never_seen(hass, freezer, monkeypatch):
     freezer.tick(timedelta(days=30))
     await sidecar_mod.async_check_fixed(hass, entry)
     assert ir.async_get(hass).async_get_issue("alex_hacks", f"probably_fixed_{entry.entry_id}") is None
+
+
+async def test_hack_picker_starts_with_nothing_ticked(hass):
+    result = await hass.config_entries.flow.async_init("alex_hacks", context={"source": "user"})
+    (key,) = result["data_schema"].schema
+    assert key == "hack" and key.default() == []
+    # Submitting nothing asks for a hack rather than picking one.
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {"hack": []})
+    assert result["type"] == "form" and result["errors"] == {"hack": "none_selected"}

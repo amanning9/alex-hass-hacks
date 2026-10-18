@@ -34,7 +34,8 @@ class AlexHacksConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_HACK): SelectSelector(
+                    # Explicitly empty: with no default the frontend pre-ticks the first hack.
+                    vol.Required(CONF_HACK, default=[]): SelectSelector(
                         SelectSelectorConfig(
                             options=[SelectOptionDict(value=k, label=h.TITLE) for k, h in HACKS.items()],
                             multiple=True,
