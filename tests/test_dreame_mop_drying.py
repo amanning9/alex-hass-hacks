@@ -6,9 +6,9 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from .helpers import add_hack, setup_dreame
 
-SWITCH = "switch.robbie_allow_drying"
-SENSOR = "sensor.robbie_mop_drying"
-NUMBER = "number.robbie_mop_drying_time"
+SWITCH = "switch.robbie_dreame_mop_drying_allow_drying"
+SENSOR = "sensor.robbie_dreame_mop_drying_mop_drying"
+NUMBER = "number.robbie_dreame_mop_drying_mop_drying_time"
 STOP = "self_wash_base 3,0"
 
 
@@ -247,7 +247,6 @@ async def test_hands_over_to_robots_auto_drying(hass, freezer):
 
 async def test_repair_turns_auto_drying_off(hass, freezer):
     from homeassistant.components.repairs import repairs_flow_manager
-    from homeassistant.components.repairs.issue_handler import async_process_repairs_platforms
     from homeassistant.helpers import issue_registry as ir
     from homeassistant.setup import async_setup_component
 
@@ -259,7 +258,6 @@ async def test_repair_turns_auto_drying_off(hass, freezer):
     await settle(hass, freezer)
     issue_id = f"auto_drying_on_{entry.entry_id}"
     assert ir.async_get(hass).async_get_issue("alex_hacks", issue_id).is_fixable
-    await async_process_repairs_platforms(hass)
     flows = repairs_flow_manager(hass)
     result = await flows.async_init("alex_hacks", data={"issue_id": issue_id})
     assert result["step_id"] == "confirm"

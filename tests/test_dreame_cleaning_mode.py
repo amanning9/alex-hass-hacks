@@ -3,7 +3,7 @@ from homeassistant.config_entries import ConfigEntryState
 
 from .helpers import add_hack, setup_dreame
 
-ENTITY = "select.robbie_cleaning_mode_fixed"
+ENTITY = "select.robbie_dreame_cleaning_mode_cleaning_mode_fixed"
 
 
 async def setup(hass):

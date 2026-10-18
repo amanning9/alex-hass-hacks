@@ -51,9 +51,9 @@ async def test_end_to_end(hass, fast, monkeypatch):
         "triggers": [{"trigger": "event", "event_type": "go_clean"}],
         "actions": [
             {"action": ACTION, "target": {"entity_id": "vacuum.robbie"}, "data": {"rooms": [
-                {"room": "sensor.robbie_kitchen", "suction": "turbo", "wetness": 20, "passes": 2},
-                {"room": "sensor.robbie_lounge", "suction": "strong"},
-                {"room": "sensor.robbie_lounge_rug", "suction": "none"},
+                {"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "turbo", "wetness": 20, "passes": 2},
+                {"room": "sensor.robbie_dreame_rooms_lounge", "suction": "strong"},
+                {"room": "sensor.robbie_dreame_rooms_lounge_rug", "suction": "none"},
             ]}},
             {"action": "notify.done"},
         ],
@@ -100,7 +100,7 @@ async def test_end_to_end(hass, fast, monkeypatch):
 
     # Logbook has the skipped room and each phase.
     assert entries == [
-        "skipping rooms no longer on the map: sensor.robbie_lounge",
+        "skipping rooms no longer on the map: sensor.robbie_dreame_rooms_lounge",
         "vacuum phase started (rooms 1)", "vacuum phase finished",
         "mop phase started (rooms 1, 5)", "mop phase finished",
         "restored switch.robbie_customized_cleaning, select.robbie_cleangenius",
@@ -111,11 +111,11 @@ async def test_errors(hass, fast):
     coord, calls = await setup(hass)
     with pytest.raises(ServiceValidationError, match="exactly one vacuum"):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-            {"entity_id": [], "rooms": [{"room": "sensor.robbie_kitchen"}]}, blocking=True)
+            {"entity_id": [], "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True)
     hass.states.async_remove("sensor.robbie_task_type")
     with pytest.raises(ServiceValidationError, match="sensor.robbie_task_type"):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_kitchen"}]}, blocking=True)
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True)
     hass.states.async_set("sensor.robbie_task_type", "unavailable")
     with pytest.raises(ServiceValidationError, match="None of the rooms"):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
@@ -123,7 +123,7 @@ async def test_errors(hass, fast):
     # Robot never starts: clear error after the start timeout.
     with pytest.raises(HomeAssistantError, match="didn't start the vacuum phase"):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_kitchen"}]}, blocking=True)
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True)
     # Settings put back after the error too.
     assert [c[0] for c in calls[-2:]] == ["switch.turn_off", "select.select_option"], calls
     assert calls[-1][1]["option"] == "routine_cleaning"
@@ -135,7 +135,7 @@ async def test_restored_when_stopped_and_left_if_already_on(hass, fast):
     hass.states.async_set("switch.robbie_customized_cleaning", "on")
     hass.states.async_set("select.robbie_cleangenius", "off")
     task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-        {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_kitchen"}]}, blocking=True))
+        {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True))
     await asyncio.sleep(0.2)
     hass.states.async_set("sensor.robbie_task_type", "standard")
     await asyncio.sleep(0.2)
@@ -151,7 +151,7 @@ async def test_restored_when_stopped_and_left_if_already_on(hass, fast):
     hass.states.async_set("switch.robbie_customized_cleaning", "off")
     hass.states.async_set("sensor.robbie_task_type", "unavailable")
     task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-        {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_kitchen"}]}, blocking=True))
+        {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True))
     await asyncio.sleep(0.2)
     hass.states.async_set("sensor.robbie_task_type", "standard")
     await asyncio.sleep(0.2)
@@ -166,7 +166,7 @@ async def test_bad_fields_rejected(hass):
     import voluptuous as vol
     with pytest.raises(vol.Invalid):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_kitchen", "wetness": 40}]}, blocking=True)
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen", "wetness": 40}]}, blocking=True)
 
 
 async def test_action_form_loads(hass):
@@ -194,7 +194,7 @@ async def test_refuses_on_another_map(hass, fast):
     await hass.async_block_till_done()
     with pytest.raises(ServiceValidationError, match="vacuum.robbie is on map 'Upstairs', not 'Downstairs'"):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_kitchen"}]}, blocking=True)
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True)
     assert calls == []      # nothing changed on the robot
 
 
