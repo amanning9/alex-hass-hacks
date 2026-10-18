@@ -44,6 +44,14 @@ Generated from the hack modules by `tools/gen_hacks_md.py`; edit the modules, no
 
 **Remove when:** deebot-client supports animal protection for the mower (DeebotUniverse/client.py PR #1778) and the Ecovacs integration exposes it (a repair says when the library has it).
 
+## Ecovacs area settings (`ecovacs_area_settings`)
+
+**What:** Adds, for each mowing area of an Ecovacs GOAT mower, its mowing direction, cutting height, speed and the grass height it treats as an obstacle, so they can be set from automations (e.g. turning the stripes every week). Areas are named as in the Ecovacs app. Changes made in the app show up straight away; nothing is polled.
+
+**Why:** Home Assistant's Ecovacs integration (deebot-client 18.7.0) doesn't support the GOAT's per-area settings, so they can only be changed in the Ecovacs app.
+
+**Remove when:** deebot-client supports area settings for the mower (DeebotUniverse/client.py PR #1767) and the Ecovacs integration exposes them (a repair says when the library has it).
+
 ## Person notify (`person_notify`)
 
 **What:** Adds a notify entity per person (e.g. notify.person_alex) that sends to every phone they're signed in to with the companion app, and the action "alex_hacks.notify_person" which does the same and also passes "data" through (buttons, links, images, channels). Phones are found from the person's device trackers, so adding or removing one needs no change.

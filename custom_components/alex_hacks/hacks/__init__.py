@@ -23,6 +23,7 @@ from . import (
     dreame_rooms,
     dreame_vacuum_then_mop,
     ecovacs_animal_protection,
+    ecovacs_area_settings,
     person_notify,
 )
 
@@ -35,5 +36,6 @@ HACKS: dict[str, ModuleType] = {
         dreame_mop_drying,
         person_notify,
         ecovacs_animal_protection,
+        ecovacs_area_settings,
     )
 }
