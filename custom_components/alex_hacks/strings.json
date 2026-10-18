@@ -48,6 +48,18 @@
     "number": {
       "mop_drying_time": {
         "name": "Mop drying time"
+      },
+      "area_direction": {
+        "name": "{area} direction"
+      },
+      "area_cutting_height": {
+        "name": "{area} cutting height"
+      },
+      "area_speed": {
+        "name": "{area} speed"
+      },
+      "area_obstacle_height": {
+        "name": "{area} obstacle grass height"
       }
     },
     "sensor": {
@@ -118,6 +130,10 @@
     "animal_protection_upstream": {
       "title": "Hack probably not needed: {title}",
       "description": "The Ecovacs library now supports animal protection for this mower. Once Home Assistant's Ecovacs integration offers it too, switch automations over to its entities and delete the \"{title}\" entry under Alex's Hacks."
+    },
+    "area_settings_upstream": {
+      "title": "Hack probably not needed: {title}",
+      "description": "The Ecovacs library now supports per-area settings for this mower. Once Home Assistant's Ecovacs integration offers them too, switch automations over to its entities and delete the \"{title}\" entry under Alex's Hacks."
     }
   },
   "services": {

@@ -139,6 +139,36 @@ nothing is polled. To follow sunset and sunrise through the year:
         time: "{{ (as_datetime(state_attr('sun.sun', 'next_rising')) | as_local).strftime('%H:%M') }}"
 ```
 
+## Ecovacs area settings
+
+The *Ecovacs area settings* hack adds, for each mowing area of an Ecovacs GOAT mower (on its
+own device, "<mower>: Ecovacs area settings"), named as in the Ecovacs app:
+
+- `number.<mower>_ecovacs_area_settings_<area>_direction`: the mowing direction, in degrees.
+- `…_<area>_cutting_height`, `…_<area>_speed` and `…_<area>_obstacle_grass_height` (the grass
+  height it treats as an obstacle): the app's levels, as the mower reports them.
+
+The mower takes all of an area's settings at once, so changing one sends the others unchanged.
+Settings are read at start-up (and when the mower comes back online); after that the mower's
+own updates and changes made in the app arrive without polling. Renaming an area in the app
+renames the entities (their ids stay). To turn the stripes a little every week:
+
+```yaml
+- alias: Turn the lawn stripes weekly
+  triggers:
+    - trigger: time
+      at: "06:00:00"
+  conditions:
+    - condition: time
+      weekday: mon
+  actions:
+    - action: number.set_value
+      target:
+        entity_id: number.goaty_ecovacs_area_settings_front_direction
+      data:
+        value: "{{ (states('number.goaty_ecovacs_area_settings_front_direction') | int + 45) % 360 }}"
+```
+
 ## Adding a hack
 
 Add `hacks/<key>.py` with `KEY`, `TITLE`, `WHAT`, `WHY`, `REMOVE_WHEN`, `PLATFORMS` and the
