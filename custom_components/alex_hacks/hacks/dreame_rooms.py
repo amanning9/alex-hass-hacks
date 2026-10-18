@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from homeassistant.components.repairs import ConfirmRepairFlow, RepairsFlow
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -19,8 +20,8 @@ WHAT = (
     "named as in the Dreame app, whose state is the room number. Pickers can filter to these "
     "(integration: alex_hacks, domain: sensor), so they list only rooms, and a room the robot "
     "splits in two shows as two. If a room disappears from that map, its entity goes unavailable "
-    "(not deleted, so automations keep their references) and a repair says which room. While the "
-    "robot is on another map, nothing changes."
+    "(not deleted, so automations keep their references) and a repair says which room; submitting "
+    "the repair removes the entity. While the robot is on another map, nothing changes."
 )
 WHY = (
     "Dreame Vacuum's per-room entities can't be told apart from its other entities in an entity "
@@ -77,7 +78,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         selected = _selected_map(coordinator)
         if selected is not None and selected.map_id is not None:
             hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_MAP_ID: selected.map_id})
-    entry.runtime_data = {"coordinator": coordinator}
+    entry.runtime_data = {"coordinator": coordinator, "known": set()}
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -90,6 +91,34 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
             ir.async_delete_issue(hass, DOMAIN, issue_id)
 
 
+def async_create_fix_flow(hass: HomeAssistant, issue_id: str, entry: ConfigEntry) -> RepairsFlow:
+    return RemoveRoomFlow(entry, int(issue_id.rsplit("_", 1)[1]))
+
+
+class RemoveRoomFlow(ConfirmRepairFlow):
+    """The room-missing repair's Submit removes the room's entity.
+
+    Home Assistant only lets you delete an entity its integration no longer provides, and this
+    hack keeps a missing room (unavailable) on purpose, so the repair does the removing.
+    """
+
+    def __init__(self, entry: ConfigEntry, room_id: int) -> None:
+        self._entry = entry
+        self._room_id = room_id
+
+    async def async_step_confirm(self, user_input: dict[str, str] | None = None):
+        if user_input is not None:
+            registry = er.async_get(self.hass)
+            unique_id = f"{self._entry.data[dreame.CONF_DREAME_ENTRY_ID]}_room_{self._room_id}"
+            if entity_id := registry.async_get_entity_id(Platform.SENSOR, DOMAIN, unique_id):
+                registry.async_remove(entity_id)
+            # If the room comes back to the map, it gets a new entity.
+            if runtime := getattr(self._entry, "runtime_data", None):
+                runtime["known"].discard(self._room_id)
+            return self.async_create_entry(data={})
+        return await super().async_step_confirm()
+
+
 def _room_name(room_id: int, segment) -> str:
     return getattr(segment, "custom_name", None) or getattr(segment, "name", None) or f"Room {room_id}"
 
@@ -99,7 +128,7 @@ async def async_setup_platform(hass, entry, platform, async_add_entities) -> Non
     # Rooms seen before (still in the entity registry) come back even if they're no longer on
     # the map, so they show as unavailable with a repair rather than vanishing.
     prefix = f"{entry.data[dreame.CONF_DREAME_ENTRY_ID]}_room_"
-    known: set[int] = set()
+    known: set[int] = entry.runtime_data["known"]
     restored = {
         int(e.unique_id[len(prefix):]): e.original_name
         for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
@@ -175,9 +204,10 @@ class RoomSensor(CoordinatorEntity, SensorEntity):
                 self.hass,
                 DOMAIN,
                 self._issue_id,
-                is_fixable=False,
+                is_fixable=True,
                 severity=ir.IssueSeverity.WARNING,
                 translation_key="room_missing",
+                data={"entry_id": self._entry.entry_id},
                 translation_placeholders={
                     "room": self.name,
                     "room_id": str(self._room_id),
