@@ -17,8 +17,23 @@ from __future__ import annotations
 
 from types import ModuleType
 
-from . import dreame_cleaning_mode, dreame_mop_drying, dreame_rooms, dreame_vacuum_then_mop, person_notify
+from . import (
+    dreame_cleaning_mode,
+    dreame_mop_drying,
+    dreame_rooms,
+    dreame_vacuum_then_mop,
+    ecovacs_animal_protection,
+    person_notify,
+)
 
 HACKS: dict[str, ModuleType] = {
-    hack.KEY: hack for hack in (dreame_cleaning_mode, dreame_rooms, dreame_vacuum_then_mop, dreame_mop_drying, person_notify)
+    hack.KEY: hack
+    for hack in (
+        dreame_cleaning_mode,
+        dreame_rooms,
+        dreame_vacuum_then_mop,
+        dreame_mop_drying,
+        person_notify,
+        ecovacs_animal_protection,
+    )
 }

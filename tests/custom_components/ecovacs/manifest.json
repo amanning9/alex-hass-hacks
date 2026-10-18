@@ -1,0 +1,1 @@
+{"domain": "ecovacs", "name": "Fake Ecovacs (tests only)", "version": "0.0.0", "codeowners": [], "config_flow": true, "documentation": "", "iot_class": "cloud_push", "requirements": []}

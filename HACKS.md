@@ -36,6 +36,14 @@ Generated from the hack modules by `tools/gen_hacks_md.py`; edit the modules, no
 
 **Remove when:** The robot (or Dreame Vacuum) supports mopping after sweeping with per-room settings, or exposes a reliable "whole job finished" signal so a plain script can do this.
 
+## Ecovacs animal protection (`ecovacs_animal_protection`)
+
+**What:** Adds "Animal protection" (switch) and its "start" and "end" times to an Ecovacs GOAT mower, so they can be set from automations (e.g. following sunset and sunrise). Changes made in the Ecovacs app show up straight away; nothing is polled.
+
+**Why:** Home Assistant's Ecovacs integration (deebot-client 18.7.0) doesn't support the GOAT's animal protection setting, so it can only be changed in the Ecovacs app.
+
+**Remove when:** deebot-client supports animal protection for the mower (DeebotUniverse/client.py PR #1778) and the Ecovacs integration exposes it (a repair says when the library has it).
+
 ## Person notify (`person_notify`)
 
 **What:** Adds a notify entity per person (e.g. notify.person_alex) that sends to every phone they're signed in to with the companion app, and the action "alex_hacks.notify_person" which does the same and also passes "data" through (buttons, links, images, channels). Phones are found from the person's device trackers, so adding or removing one needs no change.
