@@ -15,7 +15,7 @@ from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.const import ATTR_ENTITY_ID, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
@@ -84,6 +84,8 @@ START_TIMEOUT = timedelta(minutes=5)
 # "Completely done" must hold this long: task status alone blips to completed between the
 # phases of mopping after sweeping and on mid-run returns, but task type stays set.
 DONE_HOLD = timedelta(minutes=2)
+# Charging status on the base (it says charging completed once the battery is full).
+CHARGING = ("charging", "charging_completed")
 
 ROOM_SCHEMA = vol.Schema(
     {
@@ -120,11 +122,13 @@ async def _async_run(hass: HomeAssistant, call: ServiceCall) -> None:
         "customized_cleaning": f"switch.{name}_customized_cleaning",
         "task_status": f"sensor.{name}_task_status",
         "task_type": f"sensor.{name}_task_type",
-        "charging": f"binary_sensor.{name}_charging_state",
+        "charging": f"sensor.{name}_charging_status",
     }
     required = [vacuum, entities["customized_cleaning"], entities["task_status"], entities["task_type"]]
     if missing := [e for e in required if hass.states.get(e) is None]:
         raise ServiceValidationError(f"Not found (expected from Dreame Vacuum): {', '.join(missing)}")
+    if hass.states.get(entities["charging"]) is None:
+        _log(hass, call, vacuum, f"no {entities['charging']}: only 'docked' will count as back on the base")
 
     plan, skipped = [], []
     for room in call.data["rooms"]:
@@ -224,7 +228,7 @@ async def _async_phases(
                 # Some robots say idle, not docked, while charging on the base.
                 and (
                     _is(hass, vacuum, "docked")
-                    or (_is(hass, vacuum, "idle") and _is(hass, entities["charging"], STATE_ON))
+                    or (_is(hass, vacuum, "idle") and _state(hass, entities["charging"]) in CHARGING)
                 )
             )
 
@@ -242,9 +246,13 @@ async def _async_phases(
         _log(hass, call, vacuum, f"{phase} phase finished")
 
 
-def _is(hass: HomeAssistant, entity_id: str, value: str) -> bool:
+def _state(hass: HomeAssistant, entity_id: str) -> str | None:
     state = hass.states.get(entity_id)
-    return state is not None and state.state == value
+    return state.state if state is not None else None
+
+
+def _is(hass: HomeAssistant, entity_id: str, value: str) -> bool:
+    return _state(hass, entity_id) == value
 
 
 async def _wait_for(

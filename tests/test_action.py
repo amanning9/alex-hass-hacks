@@ -31,6 +31,7 @@ async def setup(hass):
     st("vacuum.robbie", "docked", {"selected_map": "Downstairs"})
     st("sensor.robbie_task_status", "completed")
     st("sensor.robbie_task_type", "unavailable")
+    st("sensor.robbie_charging_status", "charging_completed")
     st("select.robbie_cleangenius", "routine_cleaning")
     st("switch.robbie_customized_cleaning", "off")
     return coord, calls
@@ -214,17 +215,31 @@ async def test_idle_and_charging_counts_as_home(hass, fast):
     """Some robots (e.g. mum and dad's) report idle, not docked, while charging on the base."""
     coord, calls = await setup(hass)
     st = hass.states.async_set
-    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
-        {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "none"}]},
-        blocking=True))
-    await asyncio.sleep(0.2)
-    st("sensor.robbie_task_type", "standard"); st("vacuum.robbie", "cleaning"); st("sensor.robbie_task_status", "cleaning")
-    st("binary_sensor.robbie_charging_state", "off")
-    await asyncio.sleep(0.2)
-    # Finished but idle away from the base: still waiting.
-    st("sensor.robbie_task_status", "completed"); st("vacuum.robbie", "idle"); st("sensor.robbie_task_type", "unavailable")
-    await asyncio.sleep(1.5)
-    assert not task.done()
-    st("binary_sensor.robbie_charging_state", "on")  # back on the base, charging
-    await asyncio.sleep(1.5)
-    assert task.done() and task.exception() is None
+    for away, home in (("not_charging", "charging"), ("return_to_charge", "charging_completed")):
+        task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "none"}]},
+            blocking=True))
+        await asyncio.sleep(0.2)
+        st("sensor.robbie_task_type", "standard"); st("vacuum.robbie", "cleaning"); st("sensor.robbie_task_status", "cleaning")
+        st("sensor.robbie_charging_status", away)
+        await asyncio.sleep(0.2)
+        # Finished but idle away from the base: still waiting.
+        st("sensor.robbie_task_status", "completed"); st("vacuum.robbie", "idle"); st("sensor.robbie_task_type", "unavailable")
+        await asyncio.sleep(1.5)
+        assert not task.done()
+        st("sensor.robbie_charging_status", home)  # back on the base (charging, or already full)
+        await asyncio.sleep(1.5)
+        assert task.done() and task.exception() is None
+
+
+async def test_warns_without_charging_status(hass, fast, monkeypatch):
+    import homeassistant.components.logbook as logbook
+    entries = []
+    monkeypatch.setattr(logbook, "async_log_entry", lambda hass, name, message, domain, entity_id, context: entries.append(message))
+    hass.config.components.add("logbook")
+    await setup(hass)
+    hass.states.async_remove("sensor.robbie_charging_status")
+    with pytest.raises(HomeAssistantError, match="didn't start"):
+        await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True)
+    assert entries[0] == "no sensor.robbie_charging_status: only 'docked' will count as back on the base"
