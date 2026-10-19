@@ -21,6 +21,7 @@ dreame_vacuum_then_mop:
                     domain: sensor
             suction:
               label: Vacuum
+              default: standard
               selector:
                 select:
                   options:
@@ -36,6 +37,7 @@ dreame_vacuum_then_mop:
                       value: turbo
             wetness:
               label: Mop wetness (0 = don't mop)
+              default: 16
               selector:
                 number:
                   min: 0
@@ -43,6 +45,7 @@ dreame_vacuum_then_mop:
                   mode: slider
             passes:
               label: Passes
+              default: 1
               selector:
                 number:
                   min: 1
