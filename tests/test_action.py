@@ -243,3 +243,43 @@ async def test_warns_without_charging_status(hass, fast, monkeypatch):
         await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
             {"entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen"}]}, blocking=True)
     assert entries[0] == "no sensor.robbie_charging_status: only 'docked' will count as back on the base"
+
+
+async def run_one_phase(hass, calls, room):
+    """Run the action with one room; returns the custom cleaning settings each phase used."""
+    st = hass.states.async_set
+    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+        {"entity_id": "vacuum.robbie", "rooms": [room]}, blocking=True))
+    await asyncio.sleep(0.2)
+    st("sensor.robbie_task_type", "standard"); st("vacuum.robbie", "cleaning"); st("sensor.robbie_task_status", "cleaning")
+    await asyncio.sleep(0.2)
+    st("sensor.robbie_task_status", "completed"); st("vacuum.robbie", "docked", {"selected_map": "Downstairs"})
+    st("sensor.robbie_task_type", "unavailable")
+    await asyncio.sleep(1.5)
+    assert task.done() and task.exception() is None
+    assert [c[0] for c in calls[-2:]] == ["switch.turn_off", "select.select_option"], calls  # put back
+    return [c[1] for c in calls if c[0] == "dreame_vacuum.vacuum_set_custom_cleaning"]
+
+
+async def test_vacuum_only(hass, fast):
+    coord, calls = await setup(hass)
+    phases = await run_one_phase(hass, calls, {"room": "sensor.robbie_dreame_rooms_kitchen", "wetness": 0})
+    assert [p["cleaning_mode"] for p in phases] == [[0]]
+
+
+async def test_mop_only(hass, fast):
+    coord, calls = await setup(hass)
+    phases = await run_one_phase(hass, calls, {"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "none"})
+    assert [p["cleaning_mode"] for p in phases] == [[1]]
+
+
+async def test_nothing_to_do(hass, fast, monkeypatch):
+    import homeassistant.components.logbook as logbook
+    entries = []
+    monkeypatch.setattr(logbook, "async_log_entry", lambda hass, name, message, domain, entity_id, context: entries.append(message))
+    hass.config.components.add("logbook")
+    coord, calls = await setup(hass)
+    await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop", {"entity_id": "vacuum.robbie",
+        "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "none", "wetness": 0}]}, blocking=True)
+    assert calls == []  # settings left alone
+    assert entries == ["nothing to do: every room has suction none and wetness 0"]

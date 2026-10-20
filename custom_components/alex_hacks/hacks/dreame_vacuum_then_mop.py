@@ -151,6 +151,9 @@ async def _async_run(hass: HomeAssistant, call: ServiceCall) -> None:
 
     vacuum_rooms = [r for r in plan if r["suction"] != "none"]
     mop_rooms = [r for r in plan if r["wetness"] > 0]
+    if not vacuum_rooms and not mop_rooms:
+        _log(hass, call, vacuum, "nothing to do: every room has suction none and wetness 0")
+        return
 
     # Put CleanGenius and customized cleaning back as they were afterwards (also after an error
     # or being stopped): with customized cleaning on, Dreame's global cleaning mode is

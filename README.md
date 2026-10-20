@@ -27,7 +27,8 @@ Then: Settings → Devices & services → Add integration → **Alex's Hacks** �
   *Dreame rooms* hack): vacuum the rooms, wait until the robot has completely finished, then mop
   them. Call it from any automation or script; it waits until the whole clean is done, so
   following steps run afterwards. Refuses to start if the robot is on a different map from the
-  rooms.
+  rooms. A phase no room needs is skipped: give every room `wetness: 0` to only vacuum, or
+  `suction: none` to only mop. (Wetness defaults to 16, so rooms mop unless told not to.)
 
   ```yaml
   - action: alex_hacks.dreame_vacuum_then_mop
