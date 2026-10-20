@@ -56,6 +56,8 @@ dreame_vacuum_then_mop:
               selector:
                 select:
                   options:
+                    - label: Not set
+                      value: not_set
                     - label: Standard
                       value: standard
                     - label: Quick
@@ -65,6 +67,8 @@ dreame_vacuum_then_mop:
               selector:
                 select:
                   options:
+                    - label: Not set
+                      value: not_set
                     - label: Standard
                       value: standard
                     - label: Intensive

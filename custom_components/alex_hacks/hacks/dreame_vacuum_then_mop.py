@@ -101,19 +101,27 @@ RUN_HOLD = timedelta(seconds=15)
 # Charging status on the base (it says charging completed once the battery is full).
 CHARGING = ("charging", "charging_completed")
 
+# The form's way to clear a route once one's been picked (its radio buttons can't be unticked).
+NOT_SET = "not_set"
+
+
+def _drop_not_set(room: dict) -> dict:
+    return {key: value for key, value in room.items() if value != NOT_SET}
+
+
 ROOM_SCHEMA = vol.Schema(
     {
         vol.Required("room"): cv.entity_id,
         vol.Optional("suction", default="standard"): vol.In(["none", *SUCTION]),
         vol.Optional("wetness", default=16): vol.All(vol.Coerce(int), vol.Range(min=0, max=32)),
         vol.Optional("passes", default=1): vol.All(vol.Coerce(int), vol.Range(min=1, max=3)),
-        vol.Optional("vacuum_route"): vol.In(VACUUM_ROUTES),
-        vol.Optional("mop_route"): vol.In(MOP_ROUTES),
+        vol.Optional("vacuum_route"): vol.In([NOT_SET, *VACUUM_ROUTES]),
+        vol.Optional("mop_route"): vol.In([NOT_SET, *MOP_ROUTES]),
     }
 )
 SCHEMA = cv.make_entity_service_schema(
     {
-        vol.Required("rooms"): vol.All(cv.ensure_list, [ROOM_SCHEMA], vol.Length(min=1)),
+        vol.Required("rooms"): vol.All(cv.ensure_list, [vol.All(ROOM_SCHEMA, _drop_not_set)], vol.Length(min=1)),
         vol.Optional("max_duration", default=timedelta(hours=3)): cv.positive_time_period,
     }
 )
