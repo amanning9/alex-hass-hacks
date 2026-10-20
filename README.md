@@ -48,11 +48,11 @@ Then: Settings → Devices & services → Add integration → **Alex's Hacks** �
 
   Routes are optional. A mop route is set per room (rooms without one get standard if any
   room has one). The robot only takes a vacuum route for the whole clean, so when any room has
-  one the vacuum phase runs with customized cleaning off, the robot's cleaning mode set to
-  sweeping and its route set: one run per stretch of rooms sharing a route, in the order
-  given (rooms without one get standard), each room still with its own suction and passes. The
-  next run starts as soon as the last one finishes, without waiting for the robot to get home.
-  The robot's cleaning mode and route are put back afterwards.
+  one the vacuum phase runs with customized cleaning off and the robot's own cleaning mode
+  (sweeping), route and suction set: one run per stretch of rooms sharing a route and suction,
+  in the order given (rooms without a route get standard), each with its own passes. The next
+  run starts as soon as the last one finishes, without waiting for the robot to get home. The
+  robot's cleaning mode, route and suction are put back afterwards.
 
 ## Mop drying
 

@@ -36,7 +36,7 @@ WHAT = (
     "are picked from the Dreame rooms hack. "
     "Refuses to start if the robot is on a different map from the rooms. Turns CleanGenius off "
     "and customized cleaning on while it runs (and, for vacuum routes, sets the robot's cleaning "
-    "mode and route), then puts them all back as they were."
+    "mode, route and suction), then puts them all back as they were."
 )
 WHY = (
     "Per-room suction and wetness need customized cleaning, which can't be combined with the "
@@ -141,6 +141,7 @@ async def _async_run(hass: HomeAssistant, call: ServiceCall) -> None:
         "charging": f"sensor.{name}_charging_status",
         "cleaning_mode": f"select.{name}_cleaning_mode",
         "cleaning_route": f"select.{name}_cleaning_route",
+        "suction_level": f"select.{name}_suction_level",
     }
     required = [vacuum, entities["customized_cleaning"], entities["task_status"], entities["task_type"]]
     if missing := [e for e in required if hass.states.get(e) is None]:
@@ -174,17 +175,19 @@ async def _async_run(hass: HomeAssistant, call: ServiceCall) -> None:
         return
     has_route_setting = hass.states.get(entities["cleaning_route"]) is not None
     if any(r.get("vacuum_route") for r in vacuum_rooms):
-        if missing := [e for e in (entities["cleaning_mode"], entities["cleaning_route"]) if hass.states.get(e) is None]:
+        needed = (entities["cleaning_mode"], entities["cleaning_route"], entities["suction_level"])
+        if missing := [e for e in needed if hass.states.get(e) is None]:
             raise ServiceValidationError(f"vacuum_route needs {', '.join(missing)}; {vacuum} may not have routes")
     if not has_route_setting and any(r.get("mop_route") == "quick" for r in mop_rooms):
         raise ServiceValidationError(f"{vacuum} has no quick route for mopping")
 
     # Everything the action changes is put back afterwards (also after an error or being
-    # stopped): CleanGenius, customized cleaning, and the robot's cleaning mode and route.
+    # stopped): CleanGenius, customized cleaning, and the robot's cleaning mode, route and
+    # suction.
     # With customized cleaning on, Dreame's global cleaning mode is unavailable, which breaks
     # automations that set it. `current` is what the action has set, so it needn't wait for
     # entity states to catch up.
-    keys = ("cleangenius", "customized_cleaning", "cleaning_mode", "cleaning_route")
+    keys = ("cleangenius", "customized_cleaning", "cleaning_mode", "cleaning_route", "suction_level")
     before = {key: _state(hass, entities[key]) for key in keys}
     current = dict(before)
     try:
@@ -218,11 +221,13 @@ async def _async_restore(
         return before[key] not in (None, STATE_UNAVAILABLE, STATE_UNKNOWN) and current.get(key) != before[key]
 
     steps: list[tuple[str, str | None]] = []
-    if changed("cleaning_mode") or changed("cleaning_route"):
-        # The robot's own mode and route are set with customized cleaning off; mode first, as
-        # changing it can reset the route.
+    robot_wide = ("suction_level", "cleaning_mode", "cleaning_route")
+    if any(changed(key) for key in robot_wide):
+        # The robot's own settings are set with customized cleaning off. Suction while it's
+        # still sweeping (there's none in mopping mode), then the mode, then the route (deep
+        # and intensive are only offered for mopping).
         steps.append(("customized_cleaning", "off"))
-    steps += [(key, None) for key in ("cleaning_mode", "cleaning_route", "customized_cleaning", "cleangenius")]
+    steps += [(key, None) for key in (*robot_wide, "customized_cleaning", "cleangenius")]
     restored = []
     for key, value in steps:
         if value is None:  # back to how it was
@@ -252,11 +257,13 @@ async def _async_phases(
 ) -> None:
     # Each run: (phase, rooms, vacuum route). A vacuum route needs the robot's own route
     # setting, which customized cleaning overrides, so then the vacuum phase runs with
-    # customized cleaning off, one run per stretch of rooms sharing a route (keeping their
-    # order); the clean command still carries each room's suction and passes.
+    # customized cleaning off and the robot's own route and suction set: one run per stretch
+    # of rooms sharing both (keeping their order). The clean command also carries each room's
+    # suction and passes.
     runs: list[tuple[str, list, str | None]] = []
     if any(r.get("vacuum_route") for r in vacuum_rooms):
-        for route, group in itertools.groupby(vacuum_rooms, key=lambda r: r.get("vacuum_route") or "standard"):
+        stretches = itertools.groupby(vacuum_rooms, key=lambda r: (r.get("vacuum_route") or "standard", r["suction"]))
+        for (route, _), group in stretches:
             runs.append(("vacuum", list(group), route))
     elif vacuum_rooms:
         runs.append(("vacuum", vacuum_rooms, None))
@@ -293,8 +300,9 @@ async def _async_phases(
             await _ensure(hass, call, entities, current, "customized_cleaning", "off")
             await _ensure(hass, call, entities, current, "cleaning_mode", "sweeping")
             await _ensure(hass, call, entities, current, "cleaning_route", route)
+            await _ensure(hass, call, entities, current, "suction_level", rooms[0]["suction"])
             clean = {ATTR_ENTITY_ID: vacuum, "segments": ids, "suction_level": suction, "repeats": repeats}
-            started = f"{phase} phase started (rooms {', '.join(map(str, ids))}, {route} route)"
+            started = f"{phase} phase started (rooms {', '.join(map(str, ids))}, {route} route, {rooms[0]['suction']})"
         await hass.services.async_call(
             "dreame_vacuum", "vacuum_clean_segment", clean, blocking=True, context=call.context
         )

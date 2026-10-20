@@ -30,7 +30,7 @@ Generated from the hack modules by `tools/gen_hacks_md.py`; edit the modules, no
 
 ## Dreame vacuum then mop (`dreame_vacuum_then_mop`)
 
-**What:** Adds the alex_hacks.dreame_vacuum_then_mop action: vacuum the rooms, wait until the robot has completely finished (not just a recharge, mop wash or auto-empty), then mop them, each room with its own suction, wetness, passes and (optionally) vacuum and mop routes. Rooms are picked from the Dreame rooms hack. Refuses to start if the robot is on a different map from the rooms. Turns CleanGenius off and customized cleaning on while it runs (and, for vacuum routes, sets the robot's cleaning mode and route), then puts them all back as they were.
+**What:** Adds the alex_hacks.dreame_vacuum_then_mop action: vacuum the rooms, wait until the robot has completely finished (not just a recharge, mop wash or auto-empty), then mop them, each room with its own suction, wetness, passes and (optionally) vacuum and mop routes. Rooms are picked from the Dreame rooms hack. Refuses to start if the robot is on a different map from the rooms. Turns CleanGenius off and customized cleaning on while it runs (and, for vacuum routes, sets the robot's cleaning mode, route and suction), then puts them all back as they were.
 
 **Why:** Per-room suction and wetness need customized cleaning, which can't be combined with the robot's own mopping after sweeping; and Dreame Vacuum has no single "completely finished" signal (task status briefly reads completed between phases and on mid-run returns), so running the two phases needs careful waiting.
 
