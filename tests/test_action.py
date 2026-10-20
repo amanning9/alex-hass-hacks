@@ -360,7 +360,7 @@ async def test_same_route_and_suction_rooms_share_a_run_in_order(hass, fast):
     task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop", {
         "entity_id": "vacuum.robbie", "rooms": [
             {"room": "sensor.robbie_dreame_rooms_lounge_rug", "vacuum_route": "quick", "wetness": 0},
-            {"room": "sensor.robbie_dreame_rooms_kitchen", "vacuum_route": "quick", "wetness": 0},
+            {"room": "sensor.robbie_dreame_rooms_kitchen", "vacuum_route": "quick", "wetness": 0, "mop_route": "not_set"},
             {"room": "sensor.robbie_dreame_rooms_lounge", "vacuum_route": "quick", "suction": "turbo", "wetness": 0},
         ]}, blocking=True))
     await asyncio.sleep(0.2)
@@ -394,3 +394,21 @@ async def test_route_errors_and_older_robots(hass, fast):
     assert custom["custom_mopping_route"] == [2] and "cleaning_route" not in custom
     await finish(hass)
     assert task.done() and task.exception() is None
+
+
+async def test_not_set_route_is_no_route(hass, fast):
+    """The form's "Not set" is the same as leaving the route out."""
+    coord, calls = await setup(hass)
+    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop", {
+        "entity_id": "vacuum.robbie", "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen",
+                                                 "vacuum_route": "not_set", "mop_route": "not_set"}]},
+        blocking=True))
+    await asyncio.sleep(0.2)
+    # Customized cleaning as before (no robot-wide route needed), and no route sent.
+    assert [c[0] for c in calls] == ["select.select_option", "switch.turn_on",
+                                     "dreame_vacuum.vacuum_set_custom_cleaning", "dreame_vacuum.vacuum_clean_segment"]
+    await finish(hass)  # vacuum phase
+    await finish(hass)  # mop phase
+    assert task.done() and task.exception() is None
+    custom = [c[1] for c in calls if c[0] == "dreame_vacuum.vacuum_set_custom_cleaning"]
+    assert len(custom) == 2 and all("cleaning_route" not in c and "custom_mopping_route" not in c for c in custom)
