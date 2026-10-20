@@ -51,6 +51,28 @@ dreame_vacuum_then_mop:
                   min: 1
                   max: 3
                   mode: box
+            vacuum_route:
+              label: Vacuum route (optional)
+              selector:
+                select:
+                  options:
+                    - label: Standard
+                      value: standard
+                    - label: Quick
+                      value: quick
+            mop_route:
+              label: Mop route (optional)
+              selector:
+                select:
+                  options:
+                    - label: Standard
+                      value: standard
+                    - label: Intensive
+                      value: intensive
+                    - label: Deep
+                      value: deep
+                    - label: Quick
+                      value: quick
     max_duration:
       default:
         hours: 3

@@ -15,6 +15,7 @@ def fast(monkeypatch):
     import custom_components.alex_hacks.hacks.dreame_vacuum_then_mop as m
     monkeypatch.setattr(m, "DONE_HOLD", timedelta(seconds=1))
     monkeypatch.setattr(m, "START_TIMEOUT", timedelta(seconds=1))
+    monkeypatch.setattr(m, "RUN_HOLD", timedelta(seconds=0.3))
 
 
 async def setup(hass):
@@ -283,3 +284,113 @@ async def test_nothing_to_do(hass, fast, monkeypatch):
         "rooms": [{"room": "sensor.robbie_dreame_rooms_kitchen", "suction": "none", "wetness": 0}]}, blocking=True)
     assert calls == []  # settings left alone
     assert entries == ["nothing to do: every room has suction none and wetness 0"]
+
+
+async def finish(hass, vacuum_state="docked", wait=1.5):
+    """The robot runs, then finishes and heads home (or is home)."""
+    st = hass.states.async_set
+    st("sensor.robbie_task_type", "standard"); st("vacuum.robbie", "cleaning"); st("sensor.robbie_task_status", "cleaning")
+    await asyncio.sleep(0.2)
+    st("sensor.robbie_task_status", "completed"); st("vacuum.robbie", vacuum_state, {"selected_map": "Downstairs"})
+    st("sensor.robbie_task_type", "unavailable")
+    await asyncio.sleep(wait)
+
+
+async def test_vacuum_and_mop_routes(hass, fast, monkeypatch):
+    import homeassistant.components.logbook as logbook
+    entries = []
+    monkeypatch.setattr(logbook, "async_log_entry", lambda hass, name, message, domain, entity_id, context: entries.append(message))
+    hass.config.components.add("logbook")
+    coord, calls = await setup(hass)
+    st = hass.states.async_set
+    st("select.robbie_cleaning_mode", "mopping_after_sweeping")
+    st("select.robbie_cleaning_route", "standard")
+    st("select.robbie_suction_level", "turbo")
+    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop", {
+        "entity_id": "vacuum.robbie", "rooms": [
+            {"room": "sensor.robbie_dreame_rooms_kitchen", "vacuum_route": "quick"},
+            {"room": "sensor.robbie_dreame_rooms_lounge_rug", "suction": "strong", "passes": 2,
+             "wetness": 20, "mop_route": "deep"},
+        ]}, blocking=True))
+    await asyncio.sleep(0.2)
+    # First run: customized cleaning stays off; the robot's own mode, route and suction are
+    # set, and the clean command also carries the room's suction and passes.
+    assert calls == [
+        ("select.select_option", {"entity_id": "select.robbie_cleangenius", "option": "off"}),
+        ("select.select_option", {"entity_id": "select.robbie_cleaning_mode", "option": "sweeping"}),
+        ("select.select_option", {"entity_id": "select.robbie_cleaning_route", "option": "quick"}),
+        ("select.select_option", {"entity_id": "select.robbie_suction_level", "option": "standard"}),
+        ("dreame_vacuum.vacuum_clean_segment", {"entity_id": "vacuum.robbie", "segments": [1],
+                                                "suction_level": [1], "repeats": [1]}),
+    ], calls
+    # It finishes and heads home: the next room (another route) goes straight away.
+    await finish(hass, "returning", wait=0.6)
+    assert calls[5:] == [
+        ("select.select_option", {"entity_id": "select.robbie_cleaning_route", "option": "standard"}),
+        ("select.select_option", {"entity_id": "select.robbie_suction_level", "option": "strong"}),
+        ("dreame_vacuum.vacuum_clean_segment", {"entity_id": "vacuum.robbie", "segments": [5],
+                                                "suction_level": [2], "repeats": [2]}),
+    ], calls
+    # Done and home: the mop phase, with customized cleaning and per-room routes.
+    await finish(hass)
+    assert [c[0] for c in calls[8:]] == ["switch.turn_on", "dreame_vacuum.vacuum_set_custom_cleaning",
+                                         "dreame_vacuum.vacuum_clean_segment"], calls
+    assert calls[9][1]["cleaning_route"] == [1, 3]  # standard (none given), deep
+    await finish(hass)
+    assert task.done() and task.exception() is None
+    # Everything put back (with customized cleaning off; suction before the mode); the route
+    # was already standard.
+    assert calls[11:] == [
+        ("switch.turn_off", {"entity_id": "switch.robbie_customized_cleaning"}),
+        ("select.select_option", {"entity_id": "select.robbie_suction_level", "option": "turbo"}),
+        ("select.select_option", {"entity_id": "select.robbie_cleaning_mode", "option": "mopping_after_sweeping"}),
+        ("select.select_option", {"entity_id": "select.robbie_cleangenius", "option": "routine_cleaning"}),
+    ], calls
+    assert entries[0] == "vacuum phase started (rooms 1, quick route, standard)"
+    assert entries[-1] == ("restored switch.robbie_customized_cleaning, select.robbie_suction_level, "
+                           "select.robbie_cleaning_mode, select.robbie_cleangenius")
+
+
+async def test_same_route_and_suction_rooms_share_a_run_in_order(hass, fast):
+    coord, calls = await setup(hass)
+    st = hass.states.async_set
+    st("select.robbie_cleaning_mode", "sweeping")
+    st("select.robbie_cleaning_route", "quick")
+    st("select.robbie_suction_level", "standard")
+    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop", {
+        "entity_id": "vacuum.robbie", "rooms": [
+            {"room": "sensor.robbie_dreame_rooms_lounge_rug", "vacuum_route": "quick", "wetness": 0},
+            {"room": "sensor.robbie_dreame_rooms_kitchen", "vacuum_route": "quick", "wetness": 0},
+            {"room": "sensor.robbie_dreame_rooms_lounge", "vacuum_route": "quick", "suction": "turbo", "wetness": 0},
+        ]}, blocking=True))
+    await asyncio.sleep(0.2)
+    segments = lambda: [c[1]["segments"] for c in calls if c[0] == "dreame_vacuum.vacuum_clean_segment"]
+    assert segments() == [[5, 1]]
+    await finish(hass, "returning", wait=0.6)  # a different suction: its own run
+    assert segments() == [[5, 1], [3]]
+    assert ("select.select_option", {"entity_id": "select.robbie_suction_level", "option": "turbo"}) in calls
+    await finish(hass)
+    assert task.done() and task.exception() is None
+
+
+async def test_route_errors_and_older_robots(hass, fast):
+    coord, calls = await setup(hass)
+    kitchen = "sensor.robbie_dreame_rooms_kitchen"
+    # No route setting on this robot: no vacuum route, and no quick mop route.
+    with pytest.raises(ServiceValidationError, match="vacuum_route needs select.robbie_cleaning_mode"):
+        await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": kitchen, "vacuum_route": "quick"}]}, blocking=True)
+    with pytest.raises(ServiceValidationError, match="no quick route for mopping"):
+        await hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+            {"entity_id": "vacuum.robbie", "rooms": [{"room": kitchen, "suction": "none", "mop_route": "quick"}]},
+            blocking=True)
+    assert calls == []
+    # Older robots take custom_mopping_route instead.
+    task = hass.async_create_task(hass.services.async_call("alex_hacks", "dreame_vacuum_then_mop",
+        {"entity_id": "vacuum.robbie", "rooms": [{"room": kitchen, "suction": "none", "mop_route": "deep"}]},
+        blocking=True))
+    await asyncio.sleep(0.2)
+    custom = next(c[1] for c in calls if c[0] == "dreame_vacuum.vacuum_set_custom_cleaning")
+    assert custom["custom_mopping_route"] == [2] and "cleaning_route" not in custom
+    await finish(hass)
+    assert task.done() and task.exception() is None

@@ -40,9 +40,19 @@ Then: Settings → Devices & services → Add integration → **Alex's Hacks** �
           suction: turbo      # none (don't vacuum) / quiet / standard / strong / turbo
           wetness: 20         # 0 = don't mop, 1-32
           passes: 2
+          vacuum_route: quick # optional: standard / quick
+          mop_route: deep     # optional: standard / intensive / deep / quick
         - room: sensor.robbie_dreame_rooms_lounge_rug
           suction: none
   ```
+
+  Routes are optional. A mop route is set per room (rooms without one get standard if any
+  room has one). The robot only takes a vacuum route for the whole clean, so when any room has
+  one the vacuum phase runs with customized cleaning off and the robot's own cleaning mode
+  (sweeping), route and suction set: one run per stretch of rooms sharing a route and suction,
+  in the order given (rooms without a route get standard), each with its own passes. The next
+  run starts as soon as the last one finishes, without waiting for the robot to get home. The
+  robot's cleaning mode, route and suction are put back afterwards.
 
 ## Mop drying
 
