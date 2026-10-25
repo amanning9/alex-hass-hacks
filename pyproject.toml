@@ -8,7 +8,7 @@ requires-python = ">=3.14.2"
 [dependency-groups]
 dev = [
     # Home Assistant test harness; 0.13.373 bundles Home Assistant 2026.10.2, which the tests were written against.
-    "pytest-homeassistant-custom-component==0.13.373",
+    "pytest-homeassistant-custom-component==0.13.375",
     # The library Home Assistant's Ecovacs integration uses (same version as its manifest), for the Ecovacs hack.
     "deebot-client==18.7.0",
 ]
