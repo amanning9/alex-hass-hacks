@@ -19,7 +19,8 @@
     "abort": {
       "already_configured": "Those hacks are already set up for this.",
       "no_dreame": "Set up the Dreame Vacuum integration first.",
-      "no_ecovacs": "Set up the Ecovacs integration first."
+      "no_ecovacs": "Set up the Ecovacs integration first.",
+      "no_velair": "Set up the Velair integration first."
     },
     "error": {
       "none_selected": "Tick at least one hack."
@@ -143,6 +144,10 @@
     "area_settings_upstream": {
       "title": "Hack probably not needed: {title}",
       "description": "The Ecovacs library now supports per-area settings for this mower. Once Home Assistant's Ecovacs integration offers them too, switch automations over to its entities and delete the \"{title}\" entry under Alex's Hacks."
+    },
+    "velair_version": {
+      "title": "Velair version not checked: {title}",
+      "description": "\"{title}\" uses Velair's internals and has only been checked with Velair {checked}, but Velair {version} is installed, so it hasn't loaded (the return mode is left as it is).\n\nUpdate Alex's Hacks to a version checked with this Velair (then reload the entry), or go back to a checked Velair version."
     }
   },
   "services": {
