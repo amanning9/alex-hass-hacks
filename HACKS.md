@@ -59,3 +59,11 @@ Generated from the hack modules by `tools/gen_hacks_md.py`; edit the modules, no
 **Why:** The companion app only offers one notify action per phone (notify.mobile_app_<phone>), so every automation has to list each person's phones, and a new phone means editing them all. Notify groups have to be kept up to date by hand, and Home Assistant's notify entities can't carry data, so they can't send actionable notifications.
 
 **Remove when:** Home Assistant (or the companion app) can notify a person, or a person's devices, directly, with notification data. Switch automations over, then delete the entry.
+
+## Velair return mode (`velair_return_mode`)
+
+**What:** Adds "Velair return mode" (select): the Velair Mode a planned return comes back to, so an automation can match it to who'll be home (e.g. a guest mode). Changing it while a return is planned or under way plans that return again, so it isn't lost.
+
+**Why:** Velair sets the return mode only in its panel (Planned return settings): there's no action for it, so every return comes back to the same mode, e.g. Default even when guests are staying.
+
+**Remove when:** Velair lets automations choose the return mode (e.g. a field on velair.start_planned_return). This hack uses Velair's internals, so it only loads on the Velair versions it was checked against (a repair says when Velair is a different version).

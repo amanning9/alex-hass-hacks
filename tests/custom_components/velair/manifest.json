@@ -1,0 +1,1 @@
+{"domain": "velair", "name": "Fake Velair (tests only)", "version": "1.9.0-beta.5", "codeowners": [], "config_flow": true, "documentation": "", "iot_class": "local_push", "requirements": []}

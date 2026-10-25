@@ -25,6 +25,7 @@ from . import (
     ecovacs_animal_protection,
     ecovacs_area_settings,
     person_notify,
+    velair_return_mode,
 )
 
 HACKS: dict[str, ModuleType] = {
@@ -37,5 +38,6 @@ HACKS: dict[str, ModuleType] = {
         person_notify,
         ecovacs_animal_protection,
         ecovacs_area_settings,
+        velair_return_mode,
     )
 }

@@ -186,6 +186,35 @@ renames the entities (their ids stay). To turn the stripes a little every week:
         value: "{{ (states('number.goaty_ecovacs_area_settings_front_direction') | int + 45) % 360 }}"
 ```
 
+## Velair return mode
+
+The *Velair return mode* hack adds `select.velair_return_mode`: the Velair Mode a planned return
+comes back to (Velair → Planned return → return mode), which Velair otherwise only lets you set
+in its panel. An automation can then match it to who'll be home, e.g. a guest mode while guests
+are staying. Changing it cancels a return that's planned or under way (that's how Velair works),
+so the hack plans that return again: straight back to Away if it was away. Changes made in
+Velair's panel show up at the next Velair event.
+
+It uses Velair's internals, so it only loads on the Velair versions it was checked against
+(currently 1.9.0-beta.3 to beta.5). On any other version it doesn't load and a repair says so:
+update Alex's Hacks (or go back to a checked Velair version), then reload the entry.
+
+```yaml
+- alias: Velair returns to the guest mode while guests are staying
+  triggers:
+    - trigger: state
+      entity_id: [binary_sensor.guests_staying, input_select.guest_room]
+  actions:
+    - action: select.select_option
+      target:
+        entity_id: select.velair_return_mode
+      data:
+        option: >-
+          {{ {'Study': 'Guests in study', 'Purple': 'Guests in Purple', 'Both': 'Guests in both'}
+             .get(states('input_select.guest_room'), 'Guests in Purple')
+             if is_state('binary_sensor.guests_staying', 'on') else 'Default' }}
+```
+
 ## Adding a hack
 
 Add `hacks/<key>.py` with `KEY`, `TITLE`, `WHAT`, `WHY`, `REMOVE_WHEN`, `PLATFORMS` and the
