@@ -51,7 +51,7 @@ VELAIR = "velair"
 # planned_return and planned_return_episode, scheduler.get_modes(),
 # async_update_planned_return(config) (a new return mode cancels a current return) and
 # async_start_planned_return(return_at, apply_away_now=...).
-VELAIR_VERSIONS = ("1.9.0-beta.3", "1.9.0-beta.4", "1.9.0-beta.5")
+VELAIR_VERSIONS = tuple(f"1.9.0-beta.{n}" for n in range(3, 10))  # beta.3 to beta.9
 DEFAULT_OPTION = "Default"  # Velair's built-in mode (key "default")
 
 
