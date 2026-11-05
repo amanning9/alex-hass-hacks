@@ -196,7 +196,7 @@ so the hack plans that return again: straight back to Away if it was away. Chang
 Velair's panel show up at the next Velair event.
 
 It uses Velair's internals, so it only loads on the Velair versions it was checked against
-(currently 1.9.0-beta.3 to beta.5). On any other version it doesn't load and a repair says so:
+(currently 1.9.0-beta.3 to beta.9). On any other version it doesn't load and a repair says so:
 update Alex's Hacks (or go back to a checked Velair version), then reload the entry.
 
 ```yaml
