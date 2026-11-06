@@ -223,9 +223,11 @@ pass-through if it uses a new platform, then run `uv run tools/gen_hacks_md.py`.
 
 ## Releasing
 
-Bump `version` in `custom_components/alex_hacks/manifest.json` (e.g. `1.0.2`, no "v"), commit, then tag and push
-(`git tag v1.0.2 && git push --tags`). The release workflow checks the tag matches the manifest
-and publishes a GitHub release, which HACS offers as an update.
+Bump `version` in `custom_components/alex_hacks/manifest.json` (e.g. `1.0.2`, no "v") in a PR.
+When it's merged, the release workflow tags the merge `v1.0.2` and publishes a GitHub release,
+which HACS offers as an update. Pushes to main that don't change the version (or whose version
+is already released) do nothing. Tagging by hand (`git tag v1.0.2 && git push --tags`) still
+works: the workflow checks the tag matches the manifest.
 
 ## Tests
 
