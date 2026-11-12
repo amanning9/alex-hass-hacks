@@ -77,7 +77,7 @@ async def test_only_loads_on_checked_velair_versions(hass, monkeypatch):
     import custom_components.alex_hacks.hacks.velair_return_mode as hack
 
     async def newer(hass):
-        return "1.9.0-beta.10"
+        return "1.9.2"
 
     monkeypatch.setattr(hack, "velair_version", newer)
     velair = MockConfigEntry(domain="velair", title="Velair")
@@ -92,7 +92,7 @@ async def test_only_loads_on_checked_velair_versions(hass, monkeypatch):
     assert entry.state is ConfigEntryState.SETUP_ERROR
     assert hass.states.get(SELECT) is None
     issue = ir.async_get(hass).async_get_issue("alex_hacks", f"velair_version_{entry.entry_id}")
-    assert issue and issue.translation_placeholders["version"] == "1.9.0-beta.10"
+    assert issue and issue.translation_placeholders["version"] == "1.9.2"
     assert velair.runtime_data.scheduler.calls == []
     # Back on a checked version: loads, and the repair goes.
     monkeypatch.undo()
@@ -111,4 +111,4 @@ async def test_unknown_mode_is_an_error(hass):
 
 def test_checked_versions():
     from custom_components.alex_hacks.hacks.velair_return_mode import VELAIR_VERSIONS
-    assert VELAIR_VERSIONS == tuple(f"1.9.0-beta.{n}" for n in (3, 4, 5, 6, 7, 8, 9))
+    assert VELAIR_VERSIONS == (*(f"1.9.0-beta.{n}" for n in (3, 4, 5, 6, 7, 8, 9, 10, 11)), "1.9.0", "1.9.1")
